@@ -69,6 +69,17 @@ void main() {
     expect(find.text('2 items · 1 to buy'), findsOneWidget);
   });
 
+  // Spotted on the device: the strip read "1 items".
+  testWidgets('the summary strip says item, singular, for one', (
+    tester,
+  ) async {
+    await repo.upsert(itemFixture(id: 'a', quantity: 5));
+
+    await pumpList(tester);
+
+    expect(find.text('1 item · 0 to buy'), findsOneWidget);
+  });
+
   testWidgets('the summary strip hides itself when empty', (tester) async {
     await pumpList(tester);
 

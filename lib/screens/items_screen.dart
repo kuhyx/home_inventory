@@ -200,7 +200,8 @@ class _SummaryStrip extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              '${summary.total} items · ${summary.toBuy} to buy',
+              '${summary.total} ${summary.total == 1 ? 'item' : 'items'}'
+              ' · ${summary.toBuy} to buy',
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
