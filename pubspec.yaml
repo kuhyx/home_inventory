@@ -1,0 +1,59 @@
+name: home_inventory
+description: >-
+  Offline-first household inventory: what you own, where it is, what is
+  running low, and what you need to buy or can sell. CRDT-synced between
+  phone and desktop through a private GitHub repo used as dumb storage.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  # Shared CRDT log + GitHub-as-storage sync, pinned to the same tag the
+  # other consumers (todo, diet_guard) use. Never track a branch: a library
+  # change would then break the app with no local diff to explain it.
+  crdt_sync:
+    git:
+      url: https://github.com/kuhyx/utils
+      ref: crdt_sync_dart-v0.3.0
+      path: crdt_sync_dart
+
+  cupertino_icons: ^1.0.8
+  file_selector: ^1.1.0
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^10.3.1
+  http: ^1.6.0
+  idb_shim: ^2.9.6+2
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  share_plus: ^13.1.0
+  shared_preferences: ^2.5.5
+  url_launcher: ^6.3.2
+  uuid: ^4.5.3
+
+dev_dependencies:
+  fake_async: ^1.3.3
+  # Platform-interface packages let widget tests fake the picker/launcher
+  # instead of reaching a real platform channel — which is what keeps the
+  # settings-screen paths genuinely covered rather than `coverage:ignore`d.
+  file_selector_platform_interface: ^2.7.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_test:
+    sdk: flutter
+  plugin_platform_interface: ^2.1.8
+  url_launcher_platform_interface: ^2.3.2
+  very_good_analysis: ^10.2.0
+
+flutter:
+  uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#211D1B"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  adaptive_icon_monochrome: "assets/icon/icon_monochrome.png"
+  min_sdk_android: 21
