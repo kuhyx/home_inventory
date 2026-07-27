@@ -10,6 +10,7 @@ import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/screens/item_detail_screen.dart';
 import 'package:home_inventory/screens/quick_add_sheet.dart';
+import 'package:home_inventory/screens/settings_screen.dart';
 import 'package:home_inventory/ui/empty_state.dart';
 import 'package:home_inventory/ui/item_tile.dart';
 import 'package:home_inventory/ui/theme.dart';
@@ -81,6 +82,17 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
   }
 
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SettingsScreen(
+          repository: widget.repository,
+          now: widget.now,
+        ),
+      ),
+    );
+  }
+
   Future<void> _open(Item item) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -105,13 +117,25 @@ class _ItemsScreenState extends State<ItemsScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: TextField(
-                controller: _search,
-                onChanged: _onSearchChanged,
-                decoration: const InputDecoration(
-                  labelText: 'Search',
-                  prefixIcon: Icon(Icons.search),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _search,
+                      onChanged: _onSearchChanged,
+                      decoration: const InputDecoration(
+                        labelText: 'Search',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  IconButton(
+                    onPressed: _openSettings,
+                    icon: const Icon(Icons.sync),
+                    tooltip: 'Sync',
+                  ),
+                ],
               ),
             ),
             _SummaryStrip(repository: widget.repository),

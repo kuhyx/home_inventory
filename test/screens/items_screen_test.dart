@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/screens/home_shell.dart';
 import 'package:home_inventory/screens/items_screen.dart';
+import 'package:home_inventory/screens/settings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/builders.dart';
 import '../support/pump.dart';
@@ -116,6 +119,17 @@ void main() {
     // The detail screen puts the name in the app bar and the quantity in the
     // stepper, so both appear once we have navigated.
     expect(find.text('4'), findsOneWidget);
+  });
+
+  testWidgets('opens the sync screen from the header', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    await pumpList(tester);
+
+    await tester.tap(find.byIcon(Icons.sync));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsScreen), findsOneWidget);
   });
 
   testWidgets('HomeShell renders the items tab by default', (tester) async {
