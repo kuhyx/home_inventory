@@ -210,4 +210,46 @@ void main() {
       expect(copy.flags, {ItemFlag.sellable});
     });
   });
+
+  group('value equality', () {
+    test('two filters with equal facets are equal', () {
+      const a = ItemFilter(query: 'q', rooms: {'Office', 'Kitchen'});
+      const b = ItemFilter(query: 'q', rooms: {'Kitchen', 'Office'});
+
+      expect(a, b);
+      // Sets are unordered, so their own hashCode is identity-based: without
+      // the commutative fold these two would hash differently and a Set or Map
+      // of filters would hold both.
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('a differing facet breaks equality', () {
+      const a = ItemFilter(rooms: {'Office'});
+      const b = ItemFilter(rooms: {'Kitchen'});
+
+      expect(a, isNot(b));
+    });
+
+    test('a facet of a different size breaks equality', () {
+      const a = ItemFilter(rooms: {'Office'});
+      const b = ItemFilter(rooms: {'Office', 'Kitchen'});
+
+      expect(a, isNot(b));
+    });
+
+    test('every facet participates', () {
+      const base = ItemFilter();
+
+      expect(base, isNot(const ItemFilter(query: 'q')));
+      expect(base, isNot(const ItemFilter(rooms: {'r'})));
+      expect(base, isNot(const ItemFilter(containers: {'c'})));
+      expect(base, isNot(const ItemFilter(categories: {'cat'})));
+      expect(base, isNot(const ItemFilter(stock: {StockState.out})));
+      expect(base, isNot(const ItemFilter(flags: {ItemFlag.wanted})));
+    });
+
+    test('is not equal to another type', () {
+      expect(const ItemFilter(), isNot('not a filter'));
+    });
+  });
 }

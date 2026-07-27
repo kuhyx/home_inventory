@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +17,7 @@ import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../support/builders.dart';
+import '../support/file_selector_fake.dart';
 import '../support/github_fake.dart';
 import '../support/pump.dart';
 
@@ -253,6 +256,130 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No client id configured.'), findsOneWidget);
+    });
+  });
+
+  group('backup file', () {
+    late FakeFileSelector selector;
+    late Directory temp;
+
+    setUp(() async {
+      selector = FakeFileSelector();
+      FileSelectorPlatform.instance = selector;
+      temp = await Directory.systemTemp.createTemp('home_inventory_settings');
+    });
+
+    tearDown(() async {
+      await temp.delete(recursive: true);
+    });
+
+    /// Taps [label] and lets the real filesystem work finish.
+    ///
+    /// `flutter_test` runs inside a fake-async zone where `dart:io` futures
+    /// never complete, so a plain `pumpAndSettle` here asserts against a file
+    /// that has been created but not yet written. `runAsync` turns the real
+    /// event loop; the pump afterwards is what renders the status line.
+    Future<void> tapAndFlush(WidgetTester tester, String label) async {
+      await tester.runAsync(() async {
+        await tester.tap(find.text(label));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('exports the whole log to a chosen file', (tester) async {
+      await repo.upsert(itemFixture(id: 'a', name: 'Cable'));
+      final path = '${temp.path}/backup.json';
+      selector.saveLocation = FileSaveLocation(path);
+      await pumpSettings(tester, GitHubFake().client);
+
+      await tapAndFlush(tester, 'Export inventory');
+
+      expect(File(path).readAsStringSync(), contains('Cable'));
+      // Singular. '1 items' shipped once already; see commit 6d0df13.
+      expect(find.textContaining('Exported 1 item to'), findsOneWidget);
+    });
+
+    testWidgets('a cancelled export says so', (tester) async {
+      selector.saveLocation = null;
+      await pumpSettings(tester, GitHubFake().client);
+
+      await tapAndFlush(tester, 'Export inventory');
+
+      expect(find.text('Export cancelled.'), findsOneWidget);
+    });
+
+    testWidgets('imports a backup and reports the new count', (tester) async {
+      final source = await ItemRepository.openInMemory(nodeId: 'other');
+      addTearDown(source.close);
+      await source.upsert(itemFixture(id: 'a', name: 'Cable'));
+      final path = '${temp.path}/backup.json';
+      File(path).writeAsStringSync(source.exportJson());
+      selector.fileToOpen = XFile(path);
+      await pumpSettings(tester, GitHubFake().client);
+
+      await tapAndFlush(tester, 'Import inventory');
+
+      expect(repo.item('a')!.name, 'Cable');
+      expect(find.text('Imported — 1 item now.'), findsOneWidget);
+    });
+
+    testWidgets('a cancelled import says so', (tester) async {
+      selector.fileToOpen = null;
+      await pumpSettings(tester, GitHubFake().client);
+
+      await tapAndFlush(tester, 'Import inventory');
+
+      expect(find.text('Import cancelled.'), findsOneWidget);
+    });
+
+    // Picking the wrong file is ordinary user input. The decoder throws a
+    // TypeError (an Error, not an Exception) on JSON of the wrong shape, which
+    // the screen's generic guard would let escape.
+    testWidgets('the wrong file is reported, not thrown', (tester) async {
+      final path = '${temp.path}/wrong.json';
+      File(path).writeAsStringSync('[1, 2, 3]');
+      selector.fileToOpen = XFile(path);
+      await pumpSettings(tester, GitHubFake().client);
+
+      await tapAndFlush(tester, 'Import inventory');
+
+      expect(
+        find.textContaining('not an inventory backup'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a file that is not JSON at all is reported too', (
+      tester,
+    ) async {
+      final path = '${temp.path}/notes.txt';
+      File(path).writeAsStringSync('shopping list');
+      selector.fileToOpen = XFile(path);
+      await pumpSettings(tester, GitHubFake().client);
+
+      await tapAndFlush(tester, 'Import inventory');
+
+      expect(
+        find.textContaining('not an inventory backup'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a plural count reads correctly', (tester) async {
+      final source = await ItemRepository.openInMemory(nodeId: 'other');
+      addTearDown(source.close);
+      await source.upsert(itemFixture(id: 'a', name: 'Cable'));
+      await source.upsert(itemFixture(id: 'b', name: 'Flour'));
+      final path = '${temp.path}/backup.json';
+      File(path).writeAsStringSync(source.exportJson());
+      selector.fileToOpen = XFile(path);
+      await pumpSettings(tester, GitHubFake().client);
+
+      await tapAndFlush(tester, 'Import inventory');
+
+      expect(find.text('Imported — 2 items now.'), findsOneWidget);
     });
   });
 }

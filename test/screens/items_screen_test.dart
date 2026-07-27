@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
-import 'package:home_inventory/screens/home_shell.dart';
+import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/screens/items_screen.dart';
 import 'package:home_inventory/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -143,23 +143,171 @@ void main() {
     expect(find.byType(SettingsScreen), findsOneWidget);
   });
 
-  testWidgets('HomeShell renders the items tab by default', (tester) async {
-    await pumpApp(tester, HomeShell(repository: repo, now: () => at));
-    await tester.pump();
+  testWidgets('the filter badge counts active facets', (tester) async {
+    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await pumpList(tester);
 
-    expect(find.byType(ItemsScreen), findsOneWidget);
+    // No badge label at all while nothing is restricted — a "0" would read as
+    // a filter that is on and matching nothing.
+    expect(find.text('0'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'Office'));
+    await tester.pump();
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Cable'), findsOneWidget);
   });
 
-  // NavigationBar asserts destinations.length >= 2, and that assert is
-  // stripped from release builds — so a single-destination bar looks fine on
-  // a device and blows up only in debug. This is the guard against adding one
-  // back before there is a second tab.
-  testWidgets('HomeShell shows no nav bar while there is one tab', (
-    tester,
-  ) async {
-    await pumpApp(tester, HomeShell(repository: repo, now: () => at));
+  testWidgets('dismissing the filter sheet changes nothing', (tester) async {
+    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await pumpList(tester);
+
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'Office'));
+    await tester.pump();
+    // Back out instead of applying: the selection must not leak through.
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1'), findsNothing);
+  });
+
+  testWidgets('the sort menu reorders the list', (tester) async {
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Zinc', updatedAt: DateTime.utc(2026, 5)),
+    );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Anchor', updatedAt: DateTime.utc(2026, 3)),
+    );
+    await pumpList(tester);
+
+    await tester.tap(find.byIcon(Icons.sort));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Name (A-Z)').last);
+    await tester.pumpAndSettle();
+
+    final names = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data)
+        .whereType<String>()
+        .toList();
+    expect(names.indexOf('Anchor'), lessThan(names.indexOf('Zinc')));
+  });
+
+  // The locations tab hands a filter across; the items tab has to adopt it
+  // even though it is already built and sitting in the IndexedStack.
+  testWidgets('adopts a filter pushed in from another tab', (tester) async {
+    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+
+    await pumpApp(tester, ItemsScreen(repository: repo, now: () => at));
+    await tester.pump();
+    await pumpApp(
+      tester,
+      ItemsScreen(
+        repository: repo,
+        now: () => at,
+        requestedFilter: const ItemFilter(rooms: {'Kitchen'}),
+      ),
+    );
     await tester.pump();
 
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.text('Flour'), findsOneWidget);
+    expect(find.text('Cable'), findsNothing);
+  });
+
+  testWidgets('a pushed filter clears a stale search term', (tester) async {
+    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+    await pumpList(tester);
+
+    await tester.enterText(find.byType(TextField).first, 'cab');
+    await settleSearch(tester);
+    await pumpApp(
+      tester,
+      ItemsScreen(
+        repository: repo,
+        now: () => at,
+        requestedFilter: const ItemFilter(rooms: {'Kitchen'}),
+      ),
+    );
+    await tester.pump();
+
+    // Without the clear this would be "No matches": 'cab' AND room=Kitchen.
+    expect(find.text('Flour'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      '',
+    );
+  });
+
+  // Rebuilding with the *same instance* must not stomp on whatever the user
+  // has changed since — the shell hands the same object back on every tab
+  // switch.
+  testWidgets('the same filter instance is not re-adopted', (tester) async {
+    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+    const pushed = ItemFilter(rooms: {'Kitchen'});
+
+    await pumpApp(
+      tester,
+      ItemsScreen(repository: repo, now: () => at, requestedFilter: pushed),
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).first, 'flo');
+    await settleSearch(tester);
+    await pumpApp(
+      tester,
+      ItemsScreen(repository: repo, now: () => at, requestedFilter: pushed),
+    );
+    await tester.pump();
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      'flo',
+    );
+  });
+
+  // Tapping the same room twice is a second genuine request: the user may
+  // have cleared the filter in between, and comparing by value rather than
+  // identity would make that tap do nothing at all.
+  testWidgets('a re-requested equal filter is adopted again', (tester) async {
+    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+
+    await pumpApp(
+      tester,
+      ItemsScreen(
+        repository: repo,
+        now: () => at,
+        // Built the way HomeShell builds it — at run time, so each tap is a
+        // fresh object rather than a canonicalised const.
+        requestedFilter: ItemFilter(rooms: {'Kitchen'}),
+      ),
+    );
+    await tester.pump();
+    // Stand in for the user widening the filter again from the sheet.
+    await tester.enterText(find.byType(TextField).first, 'cab');
+    await settleSearch(tester);
+    await pumpApp(
+      tester,
+      ItemsScreen(
+        repository: repo,
+        now: () => at,
+        requestedFilter: ItemFilter(rooms: {'Kitchen'}),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Flour'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      '',
+    );
   });
 }

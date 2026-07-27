@@ -4,7 +4,9 @@ library;
 import 'dart:async';
 
 import 'package:crdt_sync/crdt_sync.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:home_inventory/data/backup_export.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/sync/github_device_auth.dart';
 import 'package:home_inventory/sync/sync_service.dart';
@@ -161,6 +163,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return 'Synced — $n ${n == 1 ? 'item' : 'items'}.';
   });
 
+  Future<void> _export() => _guard(
+    () => exportBackup(
+      widget.repository.exportJson(),
+      widget.repository.listItems().length,
+    ),
+  );
+
+  Future<void> _import() => _guard(() async {
+    final file = await openFile(
+      acceptedTypeGroups: const [backupTypeGroup],
+    );
+    if (file == null) return 'Import cancelled.';
+    final text = await file.readAsString();
+    try {
+      await widget.repository.importJson(text);
+    } on Object catch (error) {
+      // Deliberately broader than Exception: a file that is valid JSON but the
+      // wrong shape surfaces as a TypeError from the log decoder, and a user
+      // picking the wrong file is ordinary input, not a bug to crash on.
+      return 'That file is not an inventory backup ($error).';
+    }
+    final n = widget.repository.listItems().length;
+    return 'Imported — $n ${n == 1 ? 'item' : 'items'} now.';
+  });
+
   Future<void> _connect() => _guard(() async {
     final settings = _current();
     if (!settings.canUseDeviceFlow) return 'No client id configured.';
@@ -258,6 +285,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           OutlinedButton(
             onPressed: _busy ? null : _saveToken,
             child: const Text('Save token'),
+          ),
+          const Divider(),
+          // The offline half of the same job: sync needs GitHub and a network,
+          // a backup file needs neither, and the two failure modes (account
+          // gone / device gone) are independent.
+          Text('Backup file', style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            onPressed: _busy ? null : _export,
+            child: const Text('Export inventory'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            onPressed: _busy ? null : _import,
+            child: const Text('Import inventory'),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            // Worth saying plainly: users expect "import" to mean "restore
+            // over the top", and a merge behaves differently when the file is
+            // older than what is on the device.
+            'Importing merges — nothing already here is lost.',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           if (_status.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),

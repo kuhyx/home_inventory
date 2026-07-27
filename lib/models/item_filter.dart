@@ -2,6 +2,7 @@
 library;
 
 import 'package:home_inventory/models/item.dart';
+import 'package:meta/meta.dart';
 
 /// A boolean item property the user can filter on.
 enum ItemFlag {
@@ -40,6 +41,7 @@ enum ItemSort {
 /// shows everything. Within one facet, membership is OR: two selected rooms
 /// mean "in either room". Mirrors todo's `NoteFilter`, including the
 /// null-means-unchanged [copyWith] convention.
+@immutable
 class ItemFilter {
   /// Creates a filter; every facet defaults to unrestricted.
   const ItemFilter({
@@ -128,6 +130,37 @@ class ItemFilter {
     final folded = needle.toLowerCase();
     return haystack.any((candidate) => candidate.toLowerCase() == folded);
   }
+
+  /// Value equality, so a screen holding a filter can tell a genuinely new
+  /// restriction from a rebuild handing it an identical one. Without it the
+  /// items tab would re-subscribe its query stream on every parent rebuild.
+  @override
+  bool operator ==(Object other) =>
+      other is ItemFilter &&
+      other.query == query &&
+      _sameSet(other.rooms, rooms) &&
+      _sameSet(other.containers, containers) &&
+      _sameSet(other.categories, categories) &&
+      _sameSet(other.stock, stock) &&
+      _sameSet(other.flags, flags);
+
+  @override
+  int get hashCode => Object.hash(
+    query,
+    // Sets are unordered, so their own hashCode is identity-based and would
+    // make two equal filters hash differently. Fold instead, commutatively.
+    _setHash(rooms),
+    _setHash(containers),
+    _setHash(categories),
+    _setHash(stock),
+    _setHash(flags),
+  );
+
+  static bool _sameSet<T>(Set<T> a, Set<T> b) =>
+      a.length == b.length && a.containsAll(b);
+
+  static int _setHash<T>(Set<T> values) =>
+      values.fold(0, (acc, value) => acc ^ value.hashCode);
 
   /// Returns a copy with the given facets replaced; null leaves a facet
   /// unchanged. Pass an empty set to clear one.

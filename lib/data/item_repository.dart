@@ -158,6 +158,29 @@ class ItemRepository {
   /// [summary] as a stream that re-emits on every write.
   Stream<InventorySummary> watchSummary() => _watch(summary);
 
+  /// Everything that belongs on the shopping list.
+  ///
+  /// This is a **union** — not fully stocked *or* explicitly wanted — which is
+  /// why it cannot be expressed as an [ItemFilter]: filter facets are
+  /// AND-combined, so `stock: {low, out}` plus `flags: {wanted}` would demand
+  /// both and quietly hide the plain "I want one of these" entries.
+  List<Item> listToBuy({ItemSort sort = ItemSort.lowStockFirst}) =>
+      (_liveItems().where((item) => item.needsBuying).toList())
+        ..sort(_comparatorFor(sort));
+
+  /// [listToBuy] as a stream that re-emits on every write.
+  Stream<List<Item>> watchToBuy({ItemSort sort = ItemSort.lowStockFirst}) =>
+      _watch(() => listToBuy(sort: sort));
+
+  /// Everything flagged as sellable.
+  List<Item> listSellable({ItemSort sort = ItemSort.nameAsc}) =>
+      (_liveItems().where((item) => item.sellable).toList())
+        ..sort(_comparatorFor(sort));
+
+  /// [listSellable] as a stream that re-emits on every write.
+  Stream<List<Item>> watchSellable({ItemSort sort = ItemSort.nameAsc}) =>
+      _watch(() => listSellable(sort: sort));
+
   // ---------------------------------------------------------------------
   // Autocomplete sources
   // ---------------------------------------------------------------------
@@ -215,6 +238,9 @@ class ItemRepository {
         });
     return nodes;
   }
+
+  /// [locationTree] as a stream that re-emits on every write.
+  Stream<List<LocationNode>> watchLocationTree() => _watch(locationTree);
 
   static int _byCountThenName(ContainerNode a, ContainerNode b) {
     final byCount = b.itemCount.compareTo(a.itemCount);
@@ -428,6 +454,24 @@ class ItemRepository {
 
   /// Replaces the whole log, e.g. with a post-merge result from `syncLog`.
   Future<void> replaceAll(Log merged) => _store.replaceAll(merged);
+
+  /// The whole log as JSON text, for a manual backup.
+  ///
+  /// Deliberately the raw CRDT log rather than a prettied list of items: the
+  /// quantity history and every field's clock come with it, so re-importing a
+  /// backup is a lossless merge instead of a reset to whatever the file said.
+  String exportJson() => logToJson(exportLog());
+
+  /// Merges a backup produced by [exportJson] into the local log.
+  ///
+  /// A **merge**, never a replace. Restoring a month-old backup must not undo
+  /// this month's edits, and per-record clocks already decide which side of
+  /// each field wins.
+  ///
+  /// Throws [FormatException] on text that is not JSON. Malformed-but-valid
+  /// JSON surfaces as a `TypeError` from `logFromJson`, so the settings
+  /// screen's import action catches both rather than only `Exception`.
+  Future<void> importJson(String text) => importLog(logFromJson(text));
 
   /// Drops adjustments past the retention horizon, persisting only if
   /// something actually changed.

@@ -26,6 +26,11 @@ dependencies:
   flutter_secure_storage: ^10.3.1
   http: ^1.6.0
   idb_shim: ^2.9.6+2
+  # For @immutable on the pure-Dart models. Deliberately not
+  # `package:flutter/foundation.dart`, which exports the same annotation: the
+  # models are reachable from `tool/sync_smoke.dart`, which runs under plain
+  # `dart run` and cannot load the Flutter SDK.
+  meta: ^1.16.0
   path: ^1.9.1
   path_provider: ^2.1.5
   share_plus: ^13.1.0

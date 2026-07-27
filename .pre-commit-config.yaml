@@ -1,0 +1,43 @@
+# Pre-commit configuration for home_inventory
+# Install:  pre-commit install && pre-commit install --hook-type pre-push
+# Run:      pre-commit run --all-files
+
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        # The committed launcher icons (Android mipmaps + the hicolor PNGs the
+        # .desktop entry installs) are the only binaries here, and the largest
+        # is well under this.
+        args: [--maxkb=2000]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: local
+    hooks:
+      # Pre-push rather than pre-commit: a full clean build plus the coverage
+      # and web-build gates takes minutes, which is a reasonable price once per
+      # push and an unreasonable one per commit.
+      - id: ci-mirror
+        name: CI mirror (clean, analyze, format, coverage, web build)
+        entry: bash scripts/ci_mirror.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [pre-push]

@@ -42,15 +42,47 @@ devices — and it must run inside the `decode` hook of `syncLog`, not only on
 load. Pruning locally alone would let a peer's stale file re-introduce a record
 that then gets pushed straight back, committing churn on every sync forever.
 
+## Screens
+
+Three destinations in an `IndexedStack`, so each keeps its scroll position and
+in-flight search across tab switches:
+
+- **Items** — search, filter sheet (facet count on the badge), sort menu,
+  summary strip, add FAB.
+- **Locations** — the room → container tree with counts. Tapping a row filters
+  the Items tab, which is why `HomeShell` owns that filter rather than
+  `ItemsScreen`.
+- **Shopping** — *To buy* (not fully stocked **or** wanted — a union, which is
+  why it is a repository method and not an `ItemFilter`) and *To sell*, with a
+  one-tap "bought one" restock and undo.
+
 ## Commands
 
 ```bash
+bash scripts/ci_mirror.sh        # everything CI runs; also the pre-push hook
 flutter test --coverage          # 100% line coverage is a hard gate
 lcov --summary coverage/lcov.info
 flutter analyze --fatal-infos --fatal-warnings
-dart format lib/ test/
+dart format lib/ test/ tool/ bin/
 flutter build apk --release      # phone
 flutter build web --release      # desktop (served by the wrapper)
+```
+
+## Desktop
+
+```bash
+./run.sh                         # build the web bundle and open the app window
+./install_arch.sh                # build, package and install via pacman
+bash desktop/install_desktop_entry.sh   # launcher icon + .desktop entry only
+```
+
+`run.sh` deliberately installs no GTK toolchain: there is no `linux/` embedder
+directory here and never will be. Icons under `desktop/icons/` are pre-rendered
+and committed; regenerate with
+
+```bash
+PYTHONPATH=~/testsAndMisc python3 -m python_pkg.app_icons \
+    generate --app home_inventory --linux-out desktop/icons
 ```
 
 Deploy to the phone with the shared script — never uninstall, it wipes data:
@@ -70,3 +102,9 @@ bash ~/.claude/scripts/phone_deploy.sh ~/home_inventory --release --shot /tmp/sh
   behind a conditional export (`repository_factory{,_io,_web}.dart`); a single
   stray import breaks the web compile.
 - Commit straight to `main`; no feature branches, no PRs.
+- `@immutable` comes from `package:meta`, never `package:flutter/foundation.dart`:
+  the models are reachable from `tool/sync_smoke.dart`, which runs under plain
+  `dart run` and cannot load the Flutter SDK.
+- Backups export the **raw CRDT log**, and importing one is a merge, not a
+  restore — the per-field clocks decide each winner, so a stale backup cannot
+  undo newer edits.

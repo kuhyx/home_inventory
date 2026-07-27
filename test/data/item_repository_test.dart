@@ -778,4 +778,205 @@ void main() {
     );
     expect(record.fields[kTypeField]!.$1, kTypeItem);
   });
+
+  group('shopping lists', () {
+    test('to-buy is a union of not-stocked and wanted', () async {
+      await repo.upsert(itemFixture(id: 'ok', name: 'Fine', quantity: 9));
+      await repo.upsert(itemFixture(id: 'out', name: 'Empty', quantity: 0));
+      await repo.upsert(
+        itemFixture(
+          id: 'low',
+          name: 'Nearly',
+          quantity: 1,
+          lowStockAt: 2,
+        ),
+      );
+      await repo.upsert(
+        itemFixture(id: 'want', name: 'Drill', quantity: 5, wanted: true),
+      );
+
+      final names = repo.listToBuy().map((item) => item.name).toSet();
+
+      // 'Drill' is the load-bearing one: an AND of the two facets would drop
+      // it, since it is fully stocked.
+      expect(names, {'Empty', 'Nearly', 'Drill'});
+      expect(names, isNot(contains('Fine')));
+    });
+
+    test('to-buy leads with what is actually out', () async {
+      await repo.upsert(
+        itemFixture(id: 'low', name: 'Nearly', quantity: 1, lowStockAt: 2),
+      );
+      await repo.upsert(itemFixture(id: 'out', name: 'Empty', quantity: 0));
+
+      expect(repo.listToBuy().first.name, 'Empty');
+    });
+
+    test('to-buy honours an explicit sort', () async {
+      await repo.upsert(itemFixture(id: 'b', name: 'Zinc', quantity: 0));
+      await repo.upsert(itemFixture(id: 'a', name: 'Anchor', quantity: 0));
+
+      final names = repo
+          .listToBuy(sort: ItemSort.nameAsc)
+          .map((item) => item.name)
+          .toList();
+
+      expect(names, ['Anchor', 'Zinc']);
+    });
+
+    test('sellable lists only flagged items, A-Z', () async {
+      await repo.upsert(
+        itemFixture(id: 'b', name: 'Zinc', sellable: true),
+      );
+      await repo.upsert(
+        itemFixture(id: 'a', name: 'Anchor', sellable: true),
+      );
+      await repo.upsert(itemFixture(id: 'c', name: 'Keep'));
+
+      final names = repo.listSellable().map((item) => item.name).toList();
+
+      expect(names, ['Anchor', 'Zinc']);
+    });
+
+    test('sellable honours an explicit sort', () async {
+      await repo.upsert(
+        itemFixture(id: 'a', name: 'Anchor', quantity: 5, sellable: true),
+      );
+      await repo.upsert(
+        itemFixture(id: 'b', name: 'Zinc', quantity: 1, sellable: true),
+      );
+
+      final names = repo
+          .listSellable(sort: ItemSort.quantityAsc)
+          .map((item) => item.name)
+          .toList();
+
+      expect(names, ['Zinc', 'Anchor']);
+    });
+
+    test('watchToBuy re-emits after a restock', () async {
+      await repo.upsert(
+        itemFixture(id: 'a', name: 'Flour', quantity: 0, lowStockAt: 1),
+      );
+      final seen = <int>[];
+      final sub = repo.watchToBuy().listen((items) => seen.add(items.length));
+      await pumpEventQueue();
+
+      await repo.adjustQuantity('a', 3, AdjustmentSource.restock);
+      await pumpEventQueue();
+      await sub.cancel();
+
+      // A restock writes twice — the item record and its adjustment — so the
+      // assertion is on the ends of the sequence, not its length.
+      expect(seen.first, 1);
+      expect(seen.last, 0);
+    });
+
+    test('watchSellable re-emits after a flag change', () async {
+      await repo.upsert(itemFixture(id: 'a', name: 'Monitor'));
+      final seen = <int>[];
+      final sub = repo.watchSellable().listen(
+        (items) => seen.add(items.length),
+      );
+      await pumpEventQueue();
+
+      await repo.upsert(itemFixture(id: 'a', name: 'Monitor', sellable: true));
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(seen.first, 0);
+      expect(seen.last, 1);
+    });
+
+    test('watchLocationTree re-emits after a move', () async {
+      await repo.upsert(itemFixture(id: 'a', room: 'Office'));
+      final seen = <int>[];
+      final sub = repo.watchLocationTree().listen(
+        (rooms) => seen.add(rooms.length),
+      );
+      await pumpEventQueue();
+
+      await repo.upsert(itemFixture(id: 'b', room: 'Kitchen'));
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(seen.first, 1);
+      expect(seen.last, 2);
+    });
+  });
+
+  group('backup file', () {
+    test('a round trip through JSON preserves the inventory', () async {
+      await repo.upsert(
+        itemFixture(id: 'a', name: 'Cable', quantity: 4, room: 'Office'),
+      );
+      final json = repo.exportJson();
+
+      final other = await ItemRepository.openInMemory();
+      addTearDown(other.close);
+      await other.importJson(json);
+
+      final restored = other.item('a')!;
+      expect(restored.name, 'Cable');
+      expect(restored.quantity, 4);
+      expect(restored.room, 'Office');
+    });
+
+    test('the quantity history survives the round trip', () async {
+      await repo.upsert(itemFixture(id: 'a', quantity: 4));
+      await repo.adjustQuantity('a', -1, AdjustmentSource.use);
+      final json = repo.exportJson();
+
+      final other = await ItemRepository.openInMemory();
+      addTearDown(other.close);
+      await other.importJson(json);
+
+      expect(other.historyFor('a'), hasLength(2));
+    });
+
+    // Restoring a month-old backup must not undo this month's edits: import
+    // is a CRDT merge, and the per-field clocks decide each winner.
+    test('importing merges rather than replaces', () async {
+      await repo.upsert(itemFixture(id: 'old', name: 'Archived'));
+      final backup = repo.exportJson();
+
+      final other = await ItemRepository.openInMemory();
+      addTearDown(other.close);
+      await other.upsert(itemFixture(id: 'new', name: 'Recent'));
+      await other.importJson(backup);
+
+      expect(other.item('old')!.name, 'Archived');
+      expect(other.item('new')!.name, 'Recent');
+    });
+
+    test('a newer local edit outranks the backup', () async {
+      await repo.upsert(
+        itemFixture(
+          id: 'a',
+          name: 'Old name',
+          updatedAt: DateTime.utc(2026, 3),
+        ),
+      );
+      final backup = repo.exportJson();
+      await repo.upsert(
+        itemFixture(
+          id: 'a',
+          name: 'New name',
+          updatedAt: DateTime.utc(2026, 6),
+        ),
+      );
+
+      await repo.importJson(backup);
+
+      expect(repo.item('a')!.name, 'New name');
+    });
+
+    test('text that is not JSON is rejected', () {
+      expect(() => repo.importJson('not json'), throwsFormatException);
+    });
+
+    test('JSON of the wrong shape is rejected', () {
+      expect(() => repo.importJson('[1, 2, 3]'), throwsA(isA<TypeError>()));
+    });
+  });
 }

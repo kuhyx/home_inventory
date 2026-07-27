@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    name: app (Flutter)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          # Pinned to the version scripts/ci_mirror.sh runs against locally.
+          # A drift here is the whole failure mode the mirror exists to
+          # prevent: green locally, red in CI, with no local diff to explain
+          # it.
+          flutter-version: 3.44.8
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze --fatal-infos --fatal-warnings
+      - run: dart format --set-exit-if-changed lib/ test/ tool/ bin/
+      - run: flutter test --coverage
+      - name: Enforce 100% line coverage
+        run: |
+          lf=$(awk -F: '/^LF:/{s+=$2} END{print s}' coverage/lcov.info)
+          lh=$(awk -F: '/^LH:/{s+=$2} END{print s}' coverage/lcov.info)
+          echo "Lines covered: $lh / $lf"
+          if [ "$lf" != "$lh" ]; then
+            echo "::error::Flutter line coverage is below 100% ($lh/$lf)"
+            exit 1
+          fi
+      # The only check that catches a `dart:io` import reaching lib/main.dart:
+      # the analyzer and the VM-hosted test suite both accept one happily, and
+      # the desktop app is this web build.
+      - run: flutter build web --release
