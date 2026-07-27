@@ -4,16 +4,9 @@ import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/record_types.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/sync/sync_service.dart';
-import 'package:home_inventory/sync/sync_settings.dart';
 
 import '../support/builders.dart';
 import '../support/github_fake.dart';
-
-const _settings = SyncSettings(
-  owner: 'kuhyx',
-  repo: 'syncs',
-  token: 'tok',
-);
 
 Hlc _hlc(int ms, {String node = 'peer'}) =>
     Hlc(wallTimeMs: ms, counter: 0, nodeId: node);
@@ -61,7 +54,9 @@ void main() {
     final github = GitHubFake();
 
     final outcome = await service.sync(
-      _settings,
+      owner: 'kuhyx',
+      repo: 'syncs',
+      token: 'tok',
       httpClient: github.client,
       now: now,
     );
@@ -83,7 +78,13 @@ void main() {
       },
     );
 
-    await service.sync(_settings, httpClient: github.client, now: now);
+    await service.sync(
+      owner: 'kuhyx',
+      repo: 'syncs',
+      token: 'tok',
+      httpClient: github.client,
+      now: now,
+    );
 
     final names = repo.listItems().map((i) => i.name).toSet();
     expect(names, {'Mine', 'Theirs'});
@@ -99,7 +100,13 @@ void main() {
       },
     );
 
-    await service.sync(_settings, httpClient: github.client, now: now);
+    await service.sync(
+      owner: 'kuhyx',
+      repo: 'syncs',
+      token: 'tok',
+      httpClient: github.client,
+      now: now,
+    );
 
     // Its own remote file is not pulled back in, so the empty local log wins.
     expect(repo.listItems(), isEmpty);
@@ -123,7 +130,13 @@ void main() {
       },
     );
 
-    await service.sync(_settings, httpClient: github.client, now: now);
+    await service.sync(
+      owner: 'kuhyx',
+      repo: 'syncs',
+      token: 'tok',
+      httpClient: github.client,
+      now: now,
+    );
 
     expect(github.puts.single.content, isNot(contains('old')));
     expect(repo.exportLog().containsKey('old'), isFalse);
@@ -146,7 +159,13 @@ void main() {
       },
     );
 
-    await service.sync(_settings, httpClient: github.client, now: now);
+    await service.sync(
+      owner: 'kuhyx',
+      repo: 'syncs',
+      token: 'tok',
+      httpClient: github.client,
+      now: now,
+    );
 
     expect(repo.exportLog().containsKey('fresh'), isTrue);
     expect(repo.historyFor('peer-1'), hasLength(1));
@@ -179,7 +198,13 @@ void main() {
       },
     );
 
-    await service.sync(_settings, httpClient: github.client, now: now);
+    await service.sync(
+      owner: 'kuhyx',
+      repo: 'syncs',
+      token: 'tok',
+      httpClient: github.client,
+      now: now,
+    );
 
     final merged = repo.item('shared')!;
     expect(merged.room, 'Pantry');
@@ -190,7 +215,13 @@ void main() {
     final github = GitHubFake(repoExists: false);
 
     await expectLater(
-      service.sync(_settings, httpClient: github.client, now: now),
+      service.sync(
+        owner: 'kuhyx',
+        repo: 'syncs',
+        token: 'tok',
+        httpClient: github.client,
+        now: now,
+      ),
       throwsA(isA<GitHubSyncError>()),
     );
   });
@@ -199,7 +230,12 @@ void main() {
     await repo.upsert(itemFixture(updatedAt: DateTime.now()));
     final github = GitHubFake();
 
-    final outcome = await service.sync(_settings, httpClient: github.client);
+    final outcome = await service.sync(
+      owner: 'kuhyx',
+      repo: 'syncs',
+      token: 'tok',
+      httpClient: github.client,
+    );
 
     expect(outcome.pushed, isTrue);
   });

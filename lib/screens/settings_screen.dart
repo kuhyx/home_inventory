@@ -151,7 +151,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!settings.isConfigured) return 'Connect GitHub first.';
     await _persist(settings);
     final outcome = await SyncService(widget.repository).sync(
-      settings,
+      owner: settings.owner,
+      repo: settings.repo,
+      token: settings.token,
       httpClient: widget.httpClient,
       now: widget.now?.call(),
     );

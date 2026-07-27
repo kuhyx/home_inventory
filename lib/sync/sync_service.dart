@@ -4,7 +4,6 @@ library;
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/record_types.dart';
-import 'package:home_inventory/sync/sync_settings.dart';
 import 'package:http/http.dart' as http;
 
 /// Where each device's log file lives inside the shared `syncs` repo.
@@ -33,6 +32,11 @@ class SyncOutcome {
 /// Thin on purpose: `syncLog` does the transport and the merge, and the CRDT
 /// does conflict resolution, so the only real decisions here are the paths and
 /// the encode/decode pair.
+///
+/// Takes the three credential fields rather than a `SyncSettings`, so this
+/// layer stays free of how settings are *stored*. `SyncSettings` reaches for
+/// `flutter_secure_storage`, which drags in all of Flutter — depending on it
+/// here would make `tool/sync_smoke.dart` unrunnable under plain `dart run`.
 class SyncService {
   /// Creates a service over [repository].
   const SyncService(this.repository);
@@ -44,16 +48,18 @@ class SyncService {
   ///
   /// Throws [GitHubSyncError] (including [RepoNotFoundError]) when GitHub
   /// rejects the request; callers surface that rather than crashing.
-  Future<SyncOutcome> sync(
-    SyncSettings settings, {
+  Future<SyncOutcome> sync({
+    required String owner,
+    required String repo,
+    required String token,
     http.Client? httpClient,
     DateTime? now,
   }) async {
     final at = now ?? DateTime.now();
     final client = GitHubClient(
-      owner: settings.owner,
-      repo: settings.repo,
-      token: settings.token,
+      owner: owner,
+      repo: repo,
+      token: token,
       httpClient: httpClient,
     );
     try {
