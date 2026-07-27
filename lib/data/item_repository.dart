@@ -33,19 +33,10 @@ import 'package:home_inventory/models/rate_hint.dart';
 /// Filtering and sorting run in Dart over the in-memory log; a household
 /// inventory is small enough that this is cheaper than any index.
 class ItemRepository {
-  ItemRepository._(this._store, this._nodeId) {
-    _rebuildHistory();
-    _historySub = _store.changes.listen((_) => _rebuildHistory());
-  }
+  ItemRepository._(this._store, this._nodeId);
 
   final LogStore _store;
   final String _nodeId;
-  late final StreamSubscription<void> _historySub;
-
-  /// Adjustments grouped by item id, oldest first. Rebuilt once per change
-  /// rather than re-scanned per item, so a screen listing 40 low-stock items
-  /// does 40 short list walks instead of 40 full-log scans.
-  final Map<String, List<Adjustment>> _history = {};
 
   // Item field names. Snake_case to match the other apps' wire formats.
   static const _fName = 'name';
@@ -99,11 +90,8 @@ class ItemRepository {
     String nodeId = 'test-node',
   }) => openWith(persistence: _MemoryPersistence(), nodeId: nodeId);
 
-  /// Releases the change subscription. The repository is unusable afterwards.
-  Future<void> close() async {
-    await _historySub.cancel();
-    await _store.close();
-  }
+  /// Closes the underlying store. The repository is unusable afterwards.
+  Future<void> close() => _store.close();
 
   // ---------------------------------------------------------------------
   // Reading
@@ -362,8 +350,24 @@ class ItemRepository {
   // ---------------------------------------------------------------------
 
   /// Every recorded change to [itemId], oldest first.
-  List<Adjustment> historyFor(String itemId) =>
-      List.unmodifiable(_history[itemId] ?? const <Adjustment>[]);
+  ///
+  /// Scanned on demand rather than served from a maintained index. An index
+  /// looks cheaper, but the store's change event is delivered
+  /// asynchronously, so an index rebuilt from it is stale for a microtask
+  /// after every write — and `rateHint` runs during a widget build, which is
+  /// exactly when that window is open. A full scan is trivial at household
+  /// scale and cannot be stale.
+  List<Adjustment> historyFor(String itemId) {
+    final history = <Adjustment>[];
+    for (final record in _store.values) {
+      if (record.deleted || !isAdjustmentRecord(record)) continue;
+      final adjustment = _toAdjustment(record);
+      if (adjustment == null || adjustment.itemId != itemId) continue;
+      history.add(adjustment);
+    }
+    history.sort((a, b) => a.at.compareTo(b.at));
+    return List.unmodifiable(history);
+  }
 
   /// Projects when [itemId] will hit its low-stock threshold, or null when
   /// there is not enough evidence to say.
@@ -409,19 +413,6 @@ class ItemRepository {
       daysLeft: daysLeft.floor(),
       sampleCount: uses.length,
     );
-  }
-
-  void _rebuildHistory() {
-    _history.clear();
-    for (final record in _store.values) {
-      if (record.deleted || !isAdjustmentRecord(record)) continue;
-      final adjustment = _toAdjustment(record);
-      if (adjustment == null) continue;
-      _history.putIfAbsent(adjustment.itemId, () => []).add(adjustment);
-    }
-    for (final list in _history.values) {
-      list.sort((a, b) => a.at.compareTo(b.at));
-    }
   }
 
   // ---------------------------------------------------------------------
