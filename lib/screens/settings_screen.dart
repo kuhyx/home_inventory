@@ -157,7 +157,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       httpClient: widget.httpClient,
       now: widget.now?.call(),
     );
-    return 'Synced — ${outcome.itemCount} items.';
+    final n = outcome.itemCount;
+    return 'Synced — $n ${n == 1 ? 'item' : 'items'}.';
   });
 
   Future<void> _connect() => _guard(() async {

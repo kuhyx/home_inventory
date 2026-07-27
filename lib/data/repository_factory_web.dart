@@ -1,3 +1,4 @@
+import 'package:home_inventory/data/desktop_backup_client.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/web_log_persistence.dart';
 import 'package:idb_shim/idb_browser.dart';
@@ -13,7 +14,10 @@ import 'package:uuid/uuid.dart';
 /// so this file simply never appears in `lcov.info`.
 Future<ItemRepository> openRepository() async {
   final database = await WebLogPersistence.openDatabase(idbFactoryBrowser);
-  final persistence = WebLogPersistence(database: database);
+  final persistence = WebLogPersistence(
+    database: database,
+    backup: DesktopBackupClient(),
+  );
 
   final prefs = await SharedPreferences.getInstance();
   var nodeId = prefs.getString(ItemRepository.kNodeId) ?? '';

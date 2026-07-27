@@ -142,7 +142,7 @@ void main() {
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Synced — 1 items.'), findsOneWidget);
+    expect(find.text('Synced — 1 item.'), findsOneWidget);
     expect(
       github.puts.single.path,
       '$kSyncPathPrefix/me/$kSyncFileName',
