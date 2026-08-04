@@ -201,7 +201,11 @@ void main() {
       }),
     );
 
-    await pumpSettings(tester, github.client, firebaseFactory: () async => firebase);
+    await pumpSettings(
+      tester,
+      github.client,
+      firebaseFactory: () async => firebase,
+    );
     await tester.enterText(find.byType(TextField).last, 'gho_pasted');
     await tester.tap(find.text('Save token'));
     await tester.pumpAndSettle();

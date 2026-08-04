@@ -30,6 +30,13 @@ const kProject = FirebaseProject(
 /// `encryptedSharedPreferences` path, and libsecret on Linux.
 const _secure = FlutterSecureStorage();
 
+// Everything below reaches the OS keystore through a platform channel, which
+// `flutter test` has no binding for -- the same reason `main.dart` and
+// `openRepository()` are excluded. The logic these wrap (parsing, the
+// public/private split, sign-in) lives in `crdt_sync` and is covered there at
+// 100%; what is left here is the two-line adapter.
+// coverage:ignore-start
+
 /// The keystore-backed home for the Firebase refresh token.
 SecureCredentialStore credentialStore() => SecureCredentialStore(
   read: (key) => _secure.read(key: key),
@@ -73,3 +80,5 @@ Future<FirebaseRestClient?> openFirebase() async {
     password: account.password,
   );
 }
+
+// coverage:ignore-end

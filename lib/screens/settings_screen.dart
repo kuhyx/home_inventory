@@ -168,9 +168,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // it; GitHub stays as a mirror until every device has moved. Not being
     // set up is a normal state, not an error -- the app keeps syncing over
     // GitHub exactly as before.
-    final firebase = widget.firebaseFactory != null
-        ? await widget.firebaseFactory!()
-        : await openFirebase();
+    // `openFirebase` is the production default; tests always inject, because
+    // the real one reaches the OS keystore through a platform channel.
+    final factory = widget.firebaseFactory ?? openFirebase;
+    final firebase = await factory();
     try {
       final outcome = await SyncService(widget.repository).sync(
         owner: settings.owner,
