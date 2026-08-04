@@ -8,9 +8,11 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/backup_export.dart';
 import 'package:home_inventory/data/item_repository.dart';
+import 'package:home_inventory/sync/firebase_backend.dart';
 import 'package:home_inventory/sync/github_device_auth.dart';
 import 'package:home_inventory/sync/sync_service.dart';
 import 'package:home_inventory/sync/sync_settings.dart';
+import 'package:home_inventory/sync/sync_state_factory.dart';
 import 'package:home_inventory/ui/theme.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -22,6 +24,8 @@ class SettingsScreen extends StatefulWidget {
     required this.repository,
     this.httpClient,
     this.now,
+    this.firebaseFactory,
+    this.stateStore,
     super.key,
   });
 
@@ -33,6 +37,13 @@ class SettingsScreen extends StatefulWidget {
 
   /// Injectable clock.
   final DateTime Function()? now;
+
+  /// Builds the Firebase backend. Injected so tests can supply a fake, or
+  /// null to assert the pre-migration GitHub-only path still works.
+  final Future<FirebaseRestClient?> Function()? firebaseFactory;
+
+  /// Revision cache. Injected so tests need no application-support directory.
+  final SyncStateStore? stateStore;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -152,15 +163,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final settings = _current();
     if (!settings.isConfigured) return 'Connect GitHub first.';
     await _persist(settings);
-    final outcome = await SyncService(widget.repository).sync(
-      owner: settings.owner,
-      repo: settings.repo,
-      token: settings.token,
-      httpClient: widget.httpClient,
-      now: widget.now?.call(),
-    );
-    final n = outcome.itemCount;
-    return 'Synced — $n ${n == 1 ? 'item' : 'items'}.';
+
+    // Firebase is the primary backend when this device has been set up for
+    // it; GitHub stays as a mirror until every device has moved. Not being
+    // set up is a normal state, not an error -- the app keeps syncing over
+    // GitHub exactly as before.
+    final firebase = widget.firebaseFactory != null
+        ? await widget.firebaseFactory!()
+        : await openFirebase();
+    try {
+      final outcome = await SyncService(widget.repository).sync(
+        owner: settings.owner,
+        repo: settings.repo,
+        token: settings.token,
+        firebase: firebase,
+        stateStore: widget.stateStore ?? await openSyncStateStore(),
+        httpClient: widget.httpClient,
+        now: widget.now?.call(),
+      );
+      final n = outcome.itemCount;
+      final via = firebase == null ? 'GitHub' : 'Firebase';
+      return 'Synced via $via — $n ${n == 1 ? 'item' : 'items'}.';
+    } finally {
+      firebase?.close();
+    }
   });
 
   Future<void> _export() => _guard(

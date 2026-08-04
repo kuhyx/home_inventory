@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
+import 'package:crdt_sync/crdt_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,13 +69,26 @@ void main() {
     await repo.close();
   });
 
-  Future<void> pumpSettings(WidgetTester tester, http.Client client) async {
+  Future<void> pumpSettings(
+    WidgetTester tester,
+    http.Client client, {
+    Future<FirebaseRestClient?> Function()? firebaseFactory,
+  }) async {
     tester.view.physicalSize = const Size(1000, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await pumpApp(
       tester,
-      SettingsScreen(repository: repo, httpClient: client, now: () => at),
+      SettingsScreen(
+        repository: repo,
+        httpClient: client,
+        now: () => at,
+        // Both injected so the widget never reaches for the platform: the
+        // real factories want an application-support directory and the OS
+        // keystore, neither of which exists under `flutter test`.
+        firebaseFactory: firebaseFactory ?? () async => null,
+        stateStore: InMemorySyncStateStore(),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -145,10 +159,65 @@ void main() {
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Synced — 1 item.'), findsOneWidget);
+    expect(find.text('Synced via GitHub — 1 item.'), findsOneWidget);
+    // Two writes now: the log, then this device's revision. The revision is
+    // what lets a later tick skip re-downloading an unchanged peer, and it is
+    // published *after* the log so a peer can never cache "seen rev X"
+    // against a log it never received.
     expect(
-      github.puts.single.path,
-      '$kSyncPathPrefix/me/$kSyncFileName',
+      github.puts.map((p) => p.path),
+      ['$kSyncPathPrefix/me/$kSyncFileName', 'inventory-sync/revs/me'],
+    );
+  });
+
+  testWidgets('syncs via Firebase and still mirrors to GitHub', (tester) async {
+    // The cutover guarantee: Firebase is authoritative, and GitHub keeps
+    // receiving the same writes so an un-migrated device still converges.
+    await repo.upsert(itemFixture(name: 'Cable', updatedAt: at));
+    final github = GitHubFake();
+    final firebasePuts = <String>[];
+    final firebase = FirebaseRestClient(
+      databaseUrl: 'https://x-rtdb.europe-west1.firebasedatabase.app',
+      auth: FirebaseTokenProvider(
+        apiKey: 'AIzaKey',
+        store: InMemoryCredentialStore(
+          FirebaseCredentials(
+            idToken: 'id',
+            refreshToken: 'refresh',
+            // Real wall clock, not the fixed test `at`: the token provider
+            // compares against DateTime.now(), so a session dated from the
+            // fixture's past looks expired and triggers a refresh.
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          ),
+        ),
+      ),
+      httpClient: http_testing.MockClient((request) async {
+        if (request.method == 'PUT') {
+          firebasePuts.add(request.url.path);
+          return http.Response(request.body, 200);
+        }
+        // Nothing stored yet: an empty database answers `null`.
+        return http.Response('null', 200);
+      }),
+    );
+
+    await pumpSettings(tester, github.client, firebaseFactory: () async => firebase);
+    await tester.enterText(find.byType(TextField).last, 'gho_pasted');
+    await tester.tap(find.text('Save token'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sync now'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Synced via Firebase — 1 item.'), findsOneWidget);
+    expect(
+      firebasePuts.any((p) => p.contains('inventory-sync')),
+      isTrue,
+      reason: 'Firebase is the primary and must receive the write',
+    );
+    expect(
+      github.puts,
+      isNotEmpty,
+      reason: 'GitHub must still be mirrored during the cutover',
     );
   });
 

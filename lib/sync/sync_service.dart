@@ -46,28 +46,46 @@ class SyncService {
 
   /// Pulls every peer's log, merges, and pushes this device's result.
   ///
+  /// When [firebase] is given it becomes the **primary** backend and GitHub
+  /// is kept as a mirror: Firebase failures fail the tick, GitHub failures are
+  /// logged and tolerated, and reads union both. That is what lets the PC and
+  /// the phone cut over on different days without either losing sight of the
+  /// other. Passing null is the pre-migration behaviour, and is also the
+  /// rollback: one argument, no data movement.
+  ///
+  /// [stateStore] carries the revision cache between runs. Without it every
+  /// tick re-downloads every peer's whole log regardless of whether anything
+  /// changed — the traffic that the free tier's 10 GB/month budget depends on
+  /// not happening. It is optional only so the smoke tool can opt out.
+  ///
   /// Throws [GitHubSyncError] (including [RepoNotFoundError]) when GitHub
   /// rejects the request; callers surface that rather than crashing.
   Future<SyncOutcome> sync({
     required String owner,
     required String repo,
     required String token,
+    RemoteStore? firebase,
+    SyncStateStore? stateStore,
     http.Client? httpClient,
     DateTime? now,
   }) async {
     final at = now ?? DateTime.now();
-    final client = GitHubClient(
+    final github = GitHubClient(
       owner: owner,
       repo: repo,
       token: token,
       httpClient: httpClient,
     );
+    final client = firebase == null
+        ? github
+        : MirrorStore(primary: firebase, mirror: github);
     try {
       final merged = await syncLog(
         client: client,
         deviceId: repository.nodeId,
         pathPrefix: kSyncPathPrefix,
         localLog: repository.exportLog(),
+        stateStore: stateStore,
         encode: logToJson,
         // The prune MUST happen here, not only on load. `syncLog` pushes the
         // merge of the local log with every peer file, so pruning locally
@@ -85,7 +103,10 @@ class SyncService {
         pushed: true,
       );
     } finally {
-      client.close();
+      // Close the GitHub client specifically: MirrorStore.close() would also
+      // close the Firebase client, which the caller owns and reuses across
+      // ticks so the cached session survives.
+      github.close();
     }
   }
 }
