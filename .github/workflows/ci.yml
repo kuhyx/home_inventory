@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Lets a release be rebuilt from the current main without a dummy commit.
+  workflow_dispatch:
 
 jobs:
   app:
@@ -47,7 +49,8 @@ jobs:
   release:
     name: release (APK)
     needs: app
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Publishes on a push to main, or on a manual rebuild. Never on a PR.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
