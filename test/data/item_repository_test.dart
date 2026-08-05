@@ -75,6 +75,47 @@ void main() {
       expect(seeded.text, isNot(contains('drop')));
     });
 
+    // The phantom-item bug this allowlist exists to prevent: a record kind
+    // written by a newer build must not render as an item on an older one,
+    // while still being kept in the log so syncing back does not destroy it.
+    test('a record kind from a newer build is kept but never listed', () async {
+      final seeded = SeededPersistence(
+        logToJson({
+          'real': Record(
+            id: 'real',
+            fields: {
+              kTypeField: (kTypeItem, _hlc(1)),
+              'name': ('Screwdriver', _hlc(1)),
+            },
+          ),
+          'korytarz': Record(
+            id: 'korytarz',
+            fields: {
+              kTypeField: (kTypeLocation, _hlc(1)),
+              'name': ('Korytarz', _hlc(1)),
+            },
+          ),
+          'future': Record(
+            id: 'future',
+            fields: {kTypeField: ('quantum-widget', _hlc(1))},
+          ),
+        }),
+      );
+
+      final loaded = await ItemRepository.openWith(
+        persistence: seeded,
+        nodeId: 'n',
+        now: DateTime.utc(2026, 7, 26),
+      );
+      addTearDown(loaded.close);
+
+      expect(loaded.listItems().map((i) => i.id), ['real']);
+      expect(loaded.item('korytarz'), isNull);
+      expect(loaded.item('future'), isNull);
+      // Kept, so a round-trip through this build does not drop them.
+      expect(loaded.exportLog().keys.toSet(), {'real', 'korytarz', 'future'});
+    });
+
     test('leaves storage untouched when nothing is ancient', () async {
       final seeded = SeededPersistence(
         logToJson({

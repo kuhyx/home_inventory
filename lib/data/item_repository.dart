@@ -117,7 +117,7 @@ class ItemRepository {
   Item? item(String id) {
     final record = _store.get(id);
     if (record == null || record.deleted) return null;
-    if (isAdjustmentRecord(record)) return null;
+    if (!isItemRecord(record)) return null;
     return _toItem(record);
   }
 
@@ -579,9 +579,8 @@ class ItemRepository {
   // Internals
   // ---------------------------------------------------------------------
 
-  Iterable<Item> _liveItems() => _store.values
-      .where((r) => !r.deleted && !isAdjustmentRecord(r))
-      .map(_toItem);
+  Iterable<Item> _liveItems() =>
+      _store.values.where((r) => !r.deleted && isItemRecord(r)).map(_toItem);
 
   List<String> _rankedValues(
     String Function(Item) select, {

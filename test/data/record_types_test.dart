@@ -34,9 +34,9 @@ void main() {
     });
 
     // A record kind written by a newer build must survive a round-trip
-    // through an older one, so anything unrecognised reads as an item — the
-    // kind that is never pruned.
-    test('an unknown or missing type reads as an item', () {
+    // through an older one, so anything unrecognised is not an adjustment —
+    // and therefore never pruned.
+    test('an unknown or missing type is not an adjustment', () {
       final unknown = Record(
         id: 'x',
         fields: {kTypeField: ('quantum-widget', _hlc(1))},
@@ -45,6 +45,47 @@ void main() {
 
       expect(isAdjustmentRecord(unknown), isFalse);
       expect(isAdjustmentRecord(typeless), isFalse);
+    });
+  });
+
+  group('isItemRecord', () {
+    test('recognises an item', () {
+      expect(isItemRecord(_item('i')), isTrue);
+    });
+
+    // Records written before the type field existed.
+    test('a missing type reads as an item', () {
+      final typeless = Record(id: 'y', fields: {'name': ('hi', _hlc(1))});
+
+      expect(isItemRecord(typeless), isTrue);
+    });
+
+    test('an adjustment is not an item', () {
+      expect(isItemRecord(_adjustment('a', recent)), isFalse);
+    });
+
+    // The entire reason this predicate is an allowlist rather than
+    // `!isAdjustmentRecord`. Under a blocklist a location written by a newer
+    // build renders on an older one as a phantom item with quantity zero, so
+    // an unknown kind has to be excluded even though the pruner keeps it.
+    test('a kind from a newer build is not an item', () {
+      for (final type in [kTypeLocation, kTypeItemType, 'quantum-widget']) {
+        final record = Record(id: 'x', fields: {kTypeField: (type, _hlc(1))});
+
+        expect(isItemRecord(record), isFalse, reason: type);
+      }
+    });
+
+    // The two predicates deliberately disagree about unknown kinds: one keeps
+    // what it does not understand, the other refuses to render it.
+    test('is not the inverse of isAdjustmentRecord', () {
+      final unknown = Record(
+        id: 'x',
+        fields: {kTypeField: ('quantum-widget', _hlc(1))},
+      );
+
+      expect(isAdjustmentRecord(unknown), isFalse);
+      expect(isItemRecord(unknown), isFalse);
     });
   });
 
