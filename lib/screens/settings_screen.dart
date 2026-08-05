@@ -1,4 +1,9 @@
-/// Where the user connects GitHub and triggers a sync.
+/// Where the user connects a sync backend and triggers a sync.
+///
+/// Firebase is the primary path: sign in with the shared sync account, whose
+/// password is kept in the OS keystore. GitHub is only the cutover mirror, so
+/// its owner/repo and device-flow connection sit under "Advanced (GitHub
+/// mirror)" rather than competing with Firebase as a visible choice.
 library;
 
 import 'dart:async';
@@ -17,7 +22,7 @@ import 'package:home_inventory/ui/theme.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
-/// GitHub connection and manual sync.
+/// Sync backend connection and manual sync.
 class SettingsScreen extends StatefulWidget {
   /// Creates the settings screen.
   const SettingsScreen({
@@ -26,6 +31,9 @@ class SettingsScreen extends StatefulWidget {
     this.now,
     this.firebaseFactory,
     this.stateStore,
+    this.accountLoader,
+    this.accountSaver,
+    this.accountClearer,
     super.key,
   });
 
@@ -45,6 +53,17 @@ class SettingsScreen extends StatefulWidget {
   /// Revision cache. Injected so tests need no application-support directory.
   final SyncStateStore? stateStore;
 
+  /// Keystore accessors for the Firebase account. Injected as a group so the
+  /// connect/disconnect flows are testable without a platform channel --
+  /// `flutter test` has no binding for one.
+  final Future<FirebaseAccount?> Function()? accountLoader;
+
+  /// Persists the account. See [accountLoader].
+  final Future<void> Function(FirebaseAccount)? accountSaver;
+
+  /// Forgets the account and any cached session. See [accountLoader].
+  final Future<void> Function()? accountClearer;
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -54,9 +73,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _repo = TextEditingController();
   final _token = TextEditingController();
 
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+
   SyncSettings? _settings;
   String _status = '';
   bool _busy = false;
+  bool _firebaseConnected = false;
   DeviceCodeResponse? _pending;
 
   @override
@@ -65,6 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Fire-and-forget: the screen renders with empty fields and fills in when
     // storage answers, so there is nothing to await here.
     unawaited(_load());
+    unawaited(_loadFirebaseAccount());
   }
 
   @override
@@ -72,7 +96,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _owner.dispose();
     _repo.dispose();
     _token.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
+  }
+
+  /// Reflects a previously-stored account, so a returning user sees the real
+  /// state instead of an empty form that looks unconfigured.
+  Future<void> _loadFirebaseAccount() async {
+    final account = await (widget.accountLoader ?? loadAccount)();
+    if (!mounted) return;
+    if (account != null) _email.text = account.email;
+    setState(() => _firebaseConnected = account != null);
+  }
+
+  /// Stores the typed account and signs in immediately, so a typo surfaces
+  /// here rather than as a silent background failure on the next sync.
+  ///
+  /// Without this the app could never reach Firebase at all: `openFirebase()`
+  /// would read an account nothing had ever written.
+  Future<void> _connectFirebase() async {
+    final email = _email.text.trim();
+    final password = _password.text;
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _status = 'Enter the sync account email and password.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _status = 'Signing in...';
+    });
+    await (widget.accountSaver ?? saveAccount)(
+      FirebaseAccount(email: email, password: password),
+    );
+    final client = await (widget.firebaseFactory ?? openFirebase)();
+    if (!mounted) return;
+    if (client == null) {
+      await (widget.accountClearer ?? clearAccount)();
+      setState(() {
+        _busy = false;
+        _firebaseConnected = false;
+        _status = 'Firebase rejected that account.';
+      });
+      return;
+    }
+    _password.clear();
+    setState(() {
+      _busy = false;
+      _firebaseConnected = true;
+      _status = 'Connected to Firebase.';
+    });
+  }
+
+  Future<void> _disconnectFirebase() async {
+    await (widget.accountClearer ?? clearAccount)();
+    if (!mounted) return;
+    _email.clear();
+    _password.clear();
+    setState(() {
+      _firebaseConnected = false;
+      _status = 'Firebase disconnected.';
+    });
   }
 
   Future<void> _load() async {
@@ -161,7 +245,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _syncNow() => _guard(() async {
     final settings = _current();
-    if (!settings.isConfigured) return 'Connect GitHub first.';
+    // Either backend counts: a device connected only to Firebase is fully
+    // configured, and gating on the GitHub token alone would lock it out of
+    // syncing entirely once the mirror is retired.
+    if (!settings.isConfigured && !_firebaseConnected) {
+      return 'Connect a sync backend in Settings first.';
+    }
     await _persist(settings);
 
     // Firebase is the primary backend when this device has been set up for
@@ -257,41 +346,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          Text('GitHub', style: theme.textTheme.titleMedium),
+          Text('Firebase sync', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: _owner,
-            decoration: const InputDecoration(labelText: 'Owner'),
+          Text(
+            _firebaseConnected
+                ? 'Connected. Syncs go to Firebase first, and still mirror '
+                      'to GitHub until every device has moved.'
+                : 'Not connected - syncing over GitHub only. Enter the '
+                      'shared sync account to move this device over. The '
+                      'password is kept in the device keystore, never in the '
+                      'app or the repo.',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _repo,
-            decoration: const InputDecoration(labelText: 'Repository'),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (settings != null && settings.isConfigured)
-            Text(
-              'Connected.',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          // Once connected the account is read-only text: an editable email
+          // box beside an empty password box reads as "you still have to
+          // enter this", making a connected device look unconfigured.
+          if (_firebaseConnected)
+            Row(
+              children: [
+                const Icon(Icons.cloud_done, size: 20),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: Text(_email.text)),
+                TextButton(
+                  onPressed: _busy ? null : _disconnectFirebase,
+                  child: const Text('Disconnect'),
+                ),
+              ],
+            )
+          else ...[
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                labelText: 'Sync account email',
               ),
             ),
-          if (pending != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            SelectableText(
-              'Enter code ${pending.userCode} at ${pending.verificationUri}',
-              style: theme.textTheme.titleMedium,
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _password,
+              obscureText: true,
+              autocorrect: false,
+              decoration: const InputDecoration(
+                labelText: 'Sync account password',
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton.icon(
+              onPressed: _busy ? null : _connectFirebase,
+              icon: const Icon(Icons.cloud_done),
+              label: const Text('Connect Firebase'),
             ),
           ],
           const SizedBox(height: AppSpacing.md),
-          FilledButton(
-            onPressed: _busy ? null : _connect,
-            child: const Text('Connect GitHub'),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          OutlinedButton(
-            onPressed: _busy ? null : _testConnection,
-            child: const Text('Test connection'),
+          // GitHub is the cutover mirror, not a choice competing with
+          // Firebase, so its whole setup lives behind one disclosure.
+          ExpansionTile(
+            title: const Text('Advanced (GitHub mirror)'),
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            children: [
+              TextField(
+                controller: _owner,
+                decoration: const InputDecoration(labelText: 'Owner'),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _repo,
+                decoration: const InputDecoration(labelText: 'Repository'),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (settings != null && settings.isConfigured)
+                Text(
+                  'A GitHub token is stored.',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              if (pending != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                SelectableText(
+                  'Enter code ${pending.userCode} at '
+                  '${pending.verificationUri}',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              FilledButton(
+                onPressed: _busy ? null : _connect,
+                child: const Text('Connect GitHub'),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton(
+                onPressed: _busy ? null : _testConnection,
+                child: const Text('Test GitHub connection'),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton(

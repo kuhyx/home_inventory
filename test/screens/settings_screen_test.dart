@@ -73,6 +73,9 @@ void main() {
     WidgetTester tester,
     http.Client client, {
     Future<FirebaseRestClient?> Function()? firebaseFactory,
+    Future<FirebaseAccount?> Function()? accountLoader,
+    Future<void> Function(FirebaseAccount)? accountSaver,
+    Future<void> Function()? accountClearer,
   }) async {
     tester.view.physicalSize = const Size(1000, 2400);
     tester.view.devicePixelRatio = 1;
@@ -87,14 +90,126 @@ void main() {
         // real factories want an application-support directory and the OS
         // keystore, neither of which exists under `flutter test`.
         firebaseFactory: firebaseFactory ?? () async => null,
+        accountLoader: accountLoader ?? () async => null,
+        accountSaver: accountSaver,
+        accountClearer: accountClearer,
         stateStore: InMemorySyncStateStore(),
       ),
     );
     await tester.pumpAndSettle();
   }
 
+  /// Expands the "Advanced (GitHub mirror)" section.
+  ///
+  /// GitHub is the cutover mirror rather than a choice the user makes, so
+  /// everything GitHub-facing is collapsed by default; a test that touches
+  /// those widgets has to open it first.
+  Future<void> openAdvanced(WidgetTester tester) async {
+    await tester.tap(find.text('Advanced (GitHub mirror)'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('Connect Firebase with empty fields asks for credentials', (
+    tester,
+  ) async {
+    var saved = false;
+    await pumpSettings(
+      tester,
+      GitHubFake().client,
+      accountSaver: (_) async => saved = true,
+    );
+
+    await tester.tap(find.text('Connect Firebase'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Enter the sync account email and password.'),
+      findsOneWidget,
+    );
+    expect(saved, isFalse);
+  });
+
+  testWidgets('Connect Firebase stores the account and reports success', (
+    tester,
+  ) async {
+    FirebaseAccount? saved;
+    await pumpSettings(
+      tester,
+      GitHubFake().client,
+      accountSaver: (a) async => saved = a,
+      firebaseFactory: () async => _stubFirebaseClient(),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Sync account email'),
+      'sync@example.com',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Sync account password'),
+      'pw',
+    );
+    await tester.tap(find.text('Connect Firebase'));
+    await tester.pumpAndSettle();
+
+    // saveAccount must actually be called: without it openFirebase() reads an
+    // account nothing ever wrote, and Firebase is a silent no-op forever.
+    expect(saved?.email, 'sync@example.com');
+    expect(find.text('Connected to Firebase.'), findsOneWidget);
+    expect(find.text('sync@example.com'), findsOneWidget);
+    expect(find.text('Disconnect'), findsOneWidget);
+  });
+
+  testWidgets('a rejected account is cleared rather than left half-stored', (
+    tester,
+  ) async {
+    var cleared = false;
+    await pumpSettings(
+      tester,
+      GitHubFake().client,
+      accountSaver: (_) async {},
+      accountClearer: () async => cleared = true,
+      firebaseFactory: () async => null,
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Sync account email'),
+      'wrong@example.com',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Sync account password'),
+      'bad',
+    );
+    await tester.tap(find.text('Connect Firebase'));
+    await tester.pumpAndSettle();
+
+    expect(cleared, isTrue);
+    expect(find.text('Firebase rejected that account.'), findsOneWidget);
+  });
+
+  testWidgets('a stored account shows as connected, and disconnects', (
+    tester,
+  ) async {
+    var cleared = false;
+    await pumpSettings(
+      tester,
+      GitHubFake().client,
+      accountLoader: () async =>
+          const FirebaseAccount(email: 'stored@example.com', password: 'pw'),
+      accountClearer: () async => cleared = true,
+    );
+
+    expect(find.text('stored@example.com'), findsOneWidget);
+
+    await tester.tap(find.text('Disconnect'));
+    await tester.pumpAndSettle();
+
+    expect(cleared, isTrue);
+    expect(find.text('Firebase disconnected.'), findsOneWidget);
+  });
+
   testWidgets('shows the defaults and this device id', (tester) async {
     await pumpSettings(tester, GitHubFake().client);
+    await openAdvanced(tester);
 
     expect(find.text('kuhyx'), findsOneWidget);
     expect(find.text('syncs'), findsOneWidget);
@@ -104,7 +219,8 @@ void main() {
   testWidgets('reports a reachable repo', (tester) async {
     await pumpSettings(tester, GitHubFake().client);
 
-    await tester.tap(find.text('Test connection'));
+    await openAdvanced(tester);
+    await tester.tap(find.text('Test GitHub connection'));
     await tester.pumpAndSettle();
 
     expect(find.text('Connected to kuhyx/syncs.'), findsOneWidget);
@@ -113,7 +229,8 @@ void main() {
   testWidgets('reports an unreachable repo without throwing', (tester) async {
     await pumpSettings(tester, GitHubFake(repoExists: false).client);
 
-    await tester.tap(find.text('Test connection'));
+    await openAdvanced(tester);
+    await tester.tap(find.text('Test GitHub connection'));
     await tester.pumpAndSettle();
 
     expect(find.text('Cannot reach kuhyx/syncs.'), findsOneWidget);
@@ -125,7 +242,10 @@ void main() {
     await tester.tap(find.text('Sync now'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Connect GitHub first.'), findsOneWidget);
+    expect(
+      find.text('Connect a sync backend in Settings first.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a pasted token is saved to the keystore', (tester) async {
@@ -287,6 +407,7 @@ void main() {
     ) async {
       await pumpSettings(tester, authClient(token: 'gho_from_flow'));
 
+      await openAdvanced(tester);
       await tester.tap(find.text('Connect GitHub'));
       await tester.pumpAndSettle();
 
@@ -299,6 +420,7 @@ void main() {
     testWidgets('reports a declined authorization', (tester) async {
       await pumpSettings(tester, authClient(error: 'access_denied'));
 
+      await openAdvanced(tester);
       await tester.tap(find.text('Connect GitHub'));
       await tester.pumpAndSettle();
 
@@ -314,6 +436,7 @@ void main() {
       UrlLauncherPlatform.instance = _BrokenLauncher();
       await pumpSettings(tester, authClient(token: 'gho_from_flow'));
 
+      await openAdvanced(tester);
       await tester.tap(find.text('Connect GitHub'));
       await tester.pumpAndSettle();
 
@@ -325,6 +448,7 @@ void main() {
       SharedPreferences.setMockInitialValues({'sync.clientId': ''});
       await pumpSettings(tester, GitHubFake().client);
 
+      await openAdvanced(tester);
       await tester.tap(find.text('Connect GitHub'));
       await tester.pumpAndSettle();
 
@@ -456,3 +580,10 @@ void main() {
     });
   });
 }
+
+/// A real [FirebaseRestClient] that is never called: the settings screen only
+/// checks it for null, so no network or keystore is touched.
+FirebaseRestClient _stubFirebaseClient() => FirebaseRestClient(
+  databaseUrl: 'https://example.invalid',
+  auth: FirebaseTokenProvider(apiKey: 'k', store: InMemoryCredentialStore()),
+);
