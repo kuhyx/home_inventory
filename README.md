@@ -68,6 +68,15 @@ flutter build apk --release      # phone
 flutter build web --release      # desktop (served by the wrapper)
 ```
 
+100% line coverage is a hard gate, and `ci_mirror.sh` also checks that every
+file under `lib/` actually *appears* in `lcov.info`. Without that second check
+the first one fails open: a file no test imports is missing from the report
+entirely rather than reported at 0%, so deleting a test file can raise the
+percentage. The only permitted absences are the `COVERAGE_EXEMPT` list in that
+script — three files with no executable lines, plus the two browser-only ones
+that cannot compile into a VM test binary — and an entry that goes stale (the
+file gains coverage, or disappears) fails the build too.
+
 ## Desktop
 
 ```bash
@@ -75,6 +84,13 @@ flutter build web --release      # desktop (served by the wrapper)
 ./install_arch.sh                # build, package and install via pacman
 bash desktop/install_desktop_entry.sh   # launcher icon + .desktop entry only
 ```
+
+`bin/home_inventory_desktop.dart` is orchestration only — spawning, stdout,
+exit codes. Every decision it makes (argument parsing, which browser to launch,
+and the profile/log paths, which must stay stable because the inventory lives
+in that profile's IndexedDB) is in `lib/desktop/launcher.dart`, where tests can
+reach it. The port comes from `lib/sync/desktop_wrapper.dart` rather than a
+second constant, so the two cannot drift apart.
 
 `run.sh` deliberately installs no GTK toolchain: there is no `linux/` embedder
 directory here and never will be. Icons under `desktop/icons/` are pre-rendered

@@ -1,8 +1,3 @@
-// coverage:ignore-file
-// Bootstrap only: resolves real platform storage and calls runApp, neither of
-// which is reachable from a headless test. All testable logic lives behind
-// `openRepository()`'s covered `openRepositoryIn(path)` counterpart.
-
 /// Entry point for the home inventory app.
 library;
 
@@ -12,11 +7,18 @@ import 'package:home_inventory/data/repository_factory.dart';
 import 'package:home_inventory/screens/home_shell.dart';
 import 'package:home_inventory/ui/theme.dart';
 
+// coverage:ignore-start
+// Bootstrap only: resolves real platform storage and calls runApp, neither of
+// which is reachable from a headless test. The ignore covers this function and
+// nothing else — the app root below it is an ordinary widget, pumped by
+// test/app_test.dart, and `openRepository()`'s logic lives in the covered
+// `openRepositoryIn(path)`.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final repository = await openRepository();
   runApp(HomeInventoryApp(repository: repository));
 }
+// coverage:ignore-end
 
 /// The application root: theme wiring plus the home surface.
 class HomeInventoryApp extends StatelessWidget {
