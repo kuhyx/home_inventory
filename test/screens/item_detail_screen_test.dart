@@ -195,4 +195,70 @@ void main() {
     expect(find.byType(ItemFormScreen), findsOneWidget);
     expect(find.text('Edit item'), findsOneWidget);
   });
+
+  group('barcodes', () {
+    testWidgets('lists a linked code with what one scan is worth', (
+      tester,
+    ) async {
+      await repo.upsert(itemFixture(id: 'i1', unit: 'g'));
+      await repo.linkBarcode(
+        code: '5900512300153',
+        itemId: 'i1',
+        amount: 500,
+        unit: 'g',
+      );
+      await pumpDetail(tester);
+
+      expect(find.text('5900512300153'), findsOneWidget);
+      expect(find.text('+500 g per scan'), findsOneWidget);
+    });
+
+    testWidgets('omits the unit for a plain count', (tester) async {
+      await repo.upsert(itemFixture(id: 'i1'));
+      await repo.linkBarcode(code: '590', itemId: 'i1', amount: 2);
+      await pumpDetail(tester);
+
+      expect(find.text('+2 per scan'), findsOneWidget);
+    });
+
+    testWidgets('links a code typed into the dialog', (tester) async {
+      await repo.upsert(itemFixture(id: 'i1', unit: 'g'));
+      await pumpDetail(tester);
+
+      await tester.tap(find.byTooltip('Link a barcode'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '590');
+      await tester.enterText(find.byType(TextField).last, '500');
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      final link = repo.barcodeFor('590')!;
+      expect(link.itemId, 'i1');
+      expect(link.amount, 500);
+      expect(link.unit, 'g');
+    });
+
+    testWidgets('a cancelled dialog links nothing', (tester) async {
+      await repo.upsert(itemFixture(id: 'i1'));
+      await pumpDetail(tester);
+
+      await tester.tap(find.byTooltip('Link a barcode'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(repo.barcodesFor('i1'), isEmpty);
+    });
+
+    testWidgets('unlinks a code', (tester) async {
+      await repo.upsert(itemFixture(id: 'i1'));
+      await repo.linkBarcode(code: '590', itemId: 'i1');
+      await pumpDetail(tester);
+
+      await tester.tap(find.byTooltip('Unlink'));
+      await tester.pumpAndSettle();
+
+      expect(repo.barcodesFor('i1'), isEmpty);
+    });
+  });
 }

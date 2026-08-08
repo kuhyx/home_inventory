@@ -2,9 +2,9 @@
 library;
 
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
+import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/models/inventory_summary.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
@@ -12,6 +12,7 @@ import 'package:home_inventory/screens/filter_sheet.dart';
 import 'package:home_inventory/screens/item_detail_screen.dart';
 import 'package:home_inventory/screens/quick_add_sheet.dart';
 import 'package:home_inventory/screens/settings_screen.dart';
+import 'package:home_inventory/ui/code_prompt.dart';
 import 'package:home_inventory/ui/empty_state.dart';
 import 'package:home_inventory/ui/item_tile.dart';
 import 'package:home_inventory/ui/theme.dart';
@@ -157,6 +158,32 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
   }
 
+  /// Restocks whatever a typed code is linked to.
+  ///
+  /// Unpacking the shopping is the moment this exists for: one code per bag,
+  /// no navigating to each item first. An unknown code says so rather than
+  /// silently doing nothing — the alternative is a user tapping the same
+  /// button three times wondering which part is broken.
+  Future<void> _scan() async {
+    final entry = await promptForCode(context, title: 'Scan to restock');
+    if (entry == null) return;
+    final item = await widget.repository.applyScan(
+      entry.code,
+      source: AdjustmentSource.restock,
+      now: widget.now?.call(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          item == null
+              ? 'No item is linked to ${entry.code}'
+              : 'Restocked ${item.name}',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,6 +233,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           child: Text(_sortLabel(sort)),
                         ),
                     ],
+                  ),
+                  IconButton(
+                    onPressed: _scan,
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'Scan to restock',
                   ),
                   IconButton(
                     onPressed: _openSettings,

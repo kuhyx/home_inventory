@@ -23,6 +23,17 @@ const String kTypeLocation = 'location';
 /// [kTypeField] value for an `ItemType` record.
 const String kTypeItemType = 'item_type';
 
+/// [kTypeField] value for a `BarcodeLink` record.
+const String kTypeBarcode = 'barcode';
+
+/// Whether [record] is a barcode mapping.
+///
+/// A third kind is exactly the case [isItemRecord]'s allowlist was written
+/// for: a blocklist would have rendered every barcode as a phantom item with
+/// quantity zero on any build that predates this one.
+bool isBarcodeRecord(Record record) =>
+    record.fields[kTypeField]?.$1 == kTypeBarcode;
+
 /// Field name carrying an adjustment's timestamp, read by the pruner.
 const String kAtField = 'at';
 

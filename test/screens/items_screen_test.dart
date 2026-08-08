@@ -330,4 +330,49 @@ void main() {
       '',
     );
   });
+
+  group('scan to restock', () {
+    testWidgets('restocks whatever the code is linked to', (tester) async {
+      await repo.upsert(itemFixture(id: 'flour', name: 'Flour', quantity: 1));
+      await repo.linkBarcode(code: '590', itemId: 'flour', amount: 500);
+      await pumpList(tester);
+
+      await tester.tap(find.byTooltip('Scan to restock'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, '590');
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(repo.item('flour')!.quantity, 501);
+      expect(find.text('Restocked Flour'), findsOneWidget);
+    });
+
+    // Silently doing nothing is how a user ends up tapping the same button
+    // three times wondering which part is broken.
+    testWidgets('says so when nothing is linked to the code', (tester) async {
+      await pumpList(tester);
+
+      await tester.tap(find.byTooltip('Scan to restock'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, '590');
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No item is linked to 590'), findsOneWidget);
+    });
+
+    testWidgets('a cancelled prompt changes nothing', (tester) async {
+      await repo.upsert(itemFixture(id: 'flour', quantity: 1));
+      await repo.linkBarcode(code: '590', itemId: 'flour');
+      await pumpList(tester);
+
+      await tester.tap(find.byTooltip('Scan to restock'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(repo.item('flour')!.quantity, 1);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+  });
 }

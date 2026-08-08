@@ -6,6 +6,7 @@ import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/screens/item_form_screen.dart';
+import 'package:home_inventory/ui/code_prompt.dart';
 import 'package:home_inventory/ui/quantity_stepper.dart';
 import 'package:home_inventory/ui/stock_badge.dart';
 import 'package:home_inventory/ui/theme.dart';
@@ -64,6 +65,21 @@ class _DetailBody extends StatelessWidget {
   final ItemRepository repository;
   final Item item;
   final DateTime Function() clock;
+
+  Future<void> _addBarcode(BuildContext context) async {
+    final entry = await promptForCode(
+      context,
+      title: 'Link a barcode',
+      withAmount: true,
+    );
+    if (entry == null) return;
+    await repository.linkBarcode(
+      code: entry.code,
+      itemId: item.id,
+      amount: entry.amount,
+      unit: item.unit,
+    );
+  }
 
   Future<void> _edit(BuildContext context) async {
     await Navigator.of(context).push(
@@ -142,6 +158,33 @@ class _DetailBody extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.notes_outlined),
               title: Text(item.notes),
+            ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.qr_code_2_outlined),
+            title: const Text('Barcodes'),
+            trailing: IconButton(
+              onPressed: () => _addBarcode(context),
+              icon: const Icon(Icons.add_link),
+              tooltip: 'Link a barcode',
+            ),
+          ),
+          for (final link in repository.barcodesFor(item.id))
+            ListTile(
+              dense: true,
+              title: Text(link.code),
+              // The amount is the point of the mapping, so it is on the row
+              // rather than behind a tap: two codes for the same flour that
+              // differ only in bag size are otherwise indistinguishable.
+              subtitle: Text(
+                '+${formatQuantity(link.amount)}'
+                '${link.unit.isEmpty ? '' : ' ${link.unit}'} per scan',
+              ),
+              trailing: IconButton(
+                onPressed: () => repository.unlinkBarcode(link.code),
+                icon: const Icon(Icons.link_off),
+                tooltip: 'Unlink',
+              ),
             ),
           if (history.isNotEmpty) ...[
             const Divider(),
