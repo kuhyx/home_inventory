@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/item.dart';
 
 import '../support/builders.dart';
@@ -181,5 +182,44 @@ void main() {
     // The id rather than a name: resolving the path needs the other records,
     // which a model cannot reach.
     expect(item.toString(), contains('loc1'));
+  });
+
+  group('freshnessAt', () {
+    test('an undated item has no reading at all', () {
+      expect(itemFixture().freshnessAt(DateTime.utc(2026, 7, 26)), isNull);
+    });
+
+    test('a dated item reads against the supplied clock', () {
+      final item = itemFixture(bestBefore: DateTime.utc(2026, 7, 27));
+
+      final freshness = item.freshnessAt(DateTime.utc(2026, 7, 26))!;
+
+      expect(freshness.daysLeft, 1);
+      expect(freshness.state, FreshnessState.dueSoon);
+    });
+  });
+
+  group('copyWith and bestBefore', () {
+    test('replaces the date', () {
+      final item = itemFixture(bestBefore: DateTime.utc(2026));
+
+      final moved = item.copyWith(bestBefore: DateTime.utc(2027));
+
+      expect(moved.bestBefore, DateTime.utc(2027));
+    });
+
+    test('a null argument leaves the date alone', () {
+      final item = itemFixture(bestBefore: DateTime.utc(2026));
+
+      expect(item.copyWith(name: 'Other').bestBefore, DateTime.utc(2026));
+    });
+
+    // Same reason `clearLowStockAt` exists: null already means "unchanged",
+    // so removing a date needs its own flag.
+    test('clearBestBefore removes it', () {
+      final item = itemFixture(bestBefore: DateTime.utc(2026));
+
+      expect(item.copyWith(clearBestBefore: true).bestBefore, isNull);
+    });
   });
 }

@@ -31,7 +31,8 @@ void main() {
   const container = 4;
   const category = 5;
   const threshold = 6;
-  const notes = 7;
+  const bestBefore = 7;
+  const notes = 8;
 
   Finder fieldAt(int index) => find.byType(TextFormField).at(index);
 
@@ -276,6 +277,100 @@ void main() {
 
       expect(repo.item('i1')!.wanted, isFalse);
       expect(repo.item('i1')!.sellable, isFalse);
+    });
+  });
+
+  group('best before', () {
+    testWidgets('a typed date is saved', (tester) async {
+      await pumpForm(tester);
+
+      await tester.enterText(fieldAt(name), 'Milk');
+      await scrollTo(tester, fieldAt(bestBefore));
+      await tester.enterText(fieldAt(bestBefore), '2026-08-02');
+      await save(tester);
+      await tester.pumpAndSettle();
+
+      expect(repo.listItems().single.bestBefore, DateTime(2026, 8, 2));
+    });
+
+    testWidgets('a blank field means no date at all', (tester) async {
+      await pumpForm(tester);
+
+      await tester.enterText(fieldAt(name), 'Hammer');
+      await save(tester);
+      await tester.pumpAndSettle();
+
+      expect(repo.listItems().single.bestBefore, isNull);
+    });
+
+    testWidgets('rejects a date in the wrong shape', (tester) async {
+      await pumpForm(tester);
+
+      await tester.enterText(fieldAt(name), 'Milk');
+      await scrollTo(tester, fieldAt(bestBefore));
+      await tester.enterText(fieldAt(bestBefore), '02/08/2026');
+      await save(tester);
+      await tester.pump();
+
+      expect(find.text('Use YYYY-MM-DD'), findsOneWidget);
+      expect(repo.listItems(), isEmpty);
+    });
+
+    // DateTime.parse rolls this over to 2027-02-14 rather than failing, so
+    // without the round-trip check the form would store a date nobody typed.
+    testWidgets('rejects an impossible date rather than rolling it over', (
+      tester,
+    ) async {
+      await pumpForm(tester);
+
+      await tester.enterText(fieldAt(name), 'Milk');
+      await scrollTo(tester, fieldAt(bestBefore));
+      await tester.enterText(fieldAt(bestBefore), '2026-13-45');
+      await save(tester);
+      await tester.pump();
+
+      expect(find.text('Not a real date'), findsOneWidget);
+      expect(repo.listItems(), isEmpty);
+    });
+
+    testWidgets('editing prefills the stored date', (tester) async {
+      await repo.upsert(
+        itemFixture(id: 'dated', bestBefore: DateTime(2026, 8, 9)),
+      );
+      await pumpForm(tester, editId: 'dated');
+
+      expect(textOf(tester, bestBefore), '2026-08-09');
+    });
+
+    testWidgets('the calendar writes the chosen day into the field', (
+      tester,
+    ) async {
+      await pumpForm(tester);
+
+      await scrollTo(tester, find.byIcon(Icons.calendar_today_outlined));
+      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('30'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, bestBefore), '2026-07-30');
+    });
+
+    testWidgets('a cancelled calendar leaves the field alone', (tester) async {
+      await repo.upsert(
+        itemFixture(id: 'dated', bestBefore: DateTime(2026, 8, 9)),
+      );
+      await pumpForm(tester, editId: 'dated');
+
+      await scrollTo(tester, find.byIcon(Icons.calendar_today_outlined));
+      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, bestBefore), '2026-08-09');
     });
   });
 }

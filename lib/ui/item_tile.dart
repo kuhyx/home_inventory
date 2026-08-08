@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:home_inventory/models/item.dart';
+import 'package:home_inventory/ui/freshness_badge.dart';
 import 'package:home_inventory/ui/stock_badge.dart';
 import 'package:home_inventory/ui/theme.dart';
 
@@ -13,6 +14,7 @@ class ItemTile extends StatelessWidget {
     required this.item,
     this.locationLabel,
     this.onTap,
+    this.asOf,
     super.key,
   });
 
@@ -30,9 +32,17 @@ class ItemTile extends StatelessWidget {
   /// Called when the row is tapped.
   final VoidCallback? onTap;
 
+  /// Clock for the best-before badge; defaults to now.
+  ///
+  /// Injectable so a widget test can assert on a date badge without the
+  /// answer changing between the day the test was written and the day it
+  /// runs.
+  final DateTime? asOf;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final freshness = item.freshnessAt(asOf ?? DateTime.now());
     final quantity = item.unit.isEmpty
         ? formatQuantity(item.quantity)
         : '${formatQuantity(item.quantity)} ${item.unit}';
@@ -45,6 +55,10 @@ class ItemTile extends StatelessWidget {
             child: Text(item.name, overflow: TextOverflow.ellipsis),
           ),
           const SizedBox(width: AppSpacing.sm),
+          if (freshness != null) ...[
+            FreshnessBadge(freshness: freshness),
+            const SizedBox(width: AppSpacing.xs),
+          ],
           StockBadge(state: item.stockState),
         ],
       ),

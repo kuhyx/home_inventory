@@ -1,6 +1,8 @@
 /// The core domain type: one kind of thing the user owns, wherever it lives.
 library;
 
+import 'package:home_inventory/models/freshness.dart';
+
 /// How much of an [Item] is on hand, relative to its own threshold.
 ///
 /// Deliberately derived rather than stored: a stored flag would be a second
@@ -45,6 +47,7 @@ class Item {
     required this.container,
     required this.category,
     required this.lowStockAt,
+    required this.bestBefore,
     required this.wanted,
     required this.sellable,
     required this.notes,
@@ -95,6 +98,13 @@ class Item {
   /// need a threshold.
   final double? lowStockAt;
 
+  /// The date this stops being good, or null for the things that never do.
+  ///
+  /// Null is the common case — a screwdriver has no best-before date — which
+  /// is why this is nullable rather than a sentinel far-future date: "no
+  /// date" and "a date in 2099" must sort and filter differently.
+  final DateTime? bestBefore;
+
   /// Whether the user wants this but does not have it — it belongs on the
   /// shopping list regardless of [quantity].
   final bool wanted;
@@ -119,6 +129,18 @@ class Item {
     final threshold = lowStockAt;
     if (threshold != null && quantity <= threshold) return StockState.low;
     return StockState.ok;
+  }
+
+  /// How close this is to its [bestBefore] date as of [now], or null when it
+  /// has no date at all.
+  ///
+  /// Takes the clock as an argument rather than reading it, unlike
+  /// [stockState]: the answer changes without anything being written, so a
+  /// bare getter would make every widget that showed it untestable and
+  /// silently wrong the moment a build was cached.
+  Freshness? freshnessAt(DateTime now) {
+    final date = bestBefore;
+    return date == null ? null : Freshness.between(now, date);
   }
 
   /// Human-readable place from the legacy [room]/[container] strings.
@@ -151,6 +173,8 @@ class Item {
     String? category,
     double? lowStockAt,
     bool clearLowStockAt = false,
+    DateTime? bestBefore,
+    bool clearBestBefore = false,
     bool? wanted,
     bool? sellable,
     String? notes,
@@ -166,6 +190,7 @@ class Item {
     container: container ?? this.container,
     category: category ?? this.category,
     lowStockAt: clearLowStockAt ? null : (lowStockAt ?? this.lowStockAt),
+    bestBefore: clearBestBefore ? null : (bestBefore ?? this.bestBefore),
     wanted: wanted ?? this.wanted,
     sellable: sellable ?? this.sellable,
     notes: notes ?? this.notes,

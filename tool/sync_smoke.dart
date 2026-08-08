@@ -133,6 +133,7 @@ Future<void> _applyEdits(List<String> args, ItemRepository repository) async {
         container: 'Throwaway',
         category: '',
         lowStockAt: null,
+        bestBefore: null,
         wanted: false,
         sellable: false,
         notes: 'written by tool/sync_smoke.dart',

@@ -264,6 +264,7 @@ String _sortLabel(ItemSort sort) => switch (sort) {
   ItemSort.quantityAsc => 'Fewest first',
   ItemSort.locationAsc => 'By location',
   ItemSort.lowStockFirst => 'Running low first',
+  ItemSort.expiringFirst => 'Expiring first',
 };
 
 /// One-line headline counts above the list.

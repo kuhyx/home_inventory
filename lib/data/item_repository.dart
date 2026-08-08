@@ -8,6 +8,7 @@ import 'package:home_inventory/data/derived_ids.dart';
 import 'package:home_inventory/data/location_migration.dart';
 import 'package:home_inventory/data/record_types.dart';
 import 'package:home_inventory/models/adjustment.dart';
+import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/inventory_summary.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
@@ -50,6 +51,7 @@ class ItemRepository {
   static const _fContainer = 'container';
   static const _fCategory = 'category';
   static const _fLowStockAt = 'low_stock_at';
+  static const _fBestBefore = 'best_before';
   static const _fWanted = 'wanted';
   static const _fSellable = 'sellable';
   static const _fNotes = 'notes';
@@ -143,17 +145,25 @@ class ItemRepository {
   List<Item> listItems({
     ItemSort sort = ItemSort.updatedDesc,
     ItemFilter filter = const ItemFilter(),
+    DateTime? asOf,
   }) {
-    final items = _liveItems().where(filter.matches).toList()
-      ..sort(_comparatorFor(sort));
+    final items =
+        _liveItems().where((item) => filter.matches(item, asOf: asOf)).toList()
+          ..sort(_comparatorFor(sort));
     return items;
   }
 
   /// [listItems] as a stream that re-emits on every write.
+  ///
+  /// [asOf] is left null by the live screens on purpose: a freshness facet
+  /// then re-reads the clock on each emission rather than pinning the date
+  /// the stream happened to be opened on, so an app left running overnight
+  /// does not keep yesterday's answer.
   Stream<List<Item>> watchItems({
     ItemSort sort = ItemSort.updatedDesc,
     ItemFilter filter = const ItemFilter(),
-  }) => _watch(() => listItems(sort: sort, filter: filter));
+    DateTime? asOf,
+  }) => _watch(() => listItems(sort: sort, filter: filter, asOf: asOf));
 
   /// The item with [id], or null if absent or deleted.
   Item? item(String id) {
@@ -213,6 +223,29 @@ class ItemRepository {
   /// [listToBuy] as a stream that re-emits on every write.
   Stream<List<Item>> watchToBuy({ItemSort sort = ItemSort.lowStockFirst}) =>
       _watch(() => listToBuy(sort: sort));
+
+  /// Everything already past its best-before date or close to it, soonest
+  /// first.
+  ///
+  /// A repository method rather than an [ItemFilter] preset for the same
+  /// reason [listToBuy] is one: it is a **union** of two freshness states,
+  /// and facets are AND-combined.
+  List<Item> listExpiring({DateTime? now}) {
+    final at = now ?? DateTime.now();
+    return _liveItems()
+        .where(
+          (item) => switch (item.freshnessAt(at)?.state) {
+            FreshnessState.expired || FreshnessState.dueSoon => true,
+            FreshnessState.fresh || null => false,
+          },
+        )
+        .toList()
+      ..sort(_comparatorFor(ItemSort.expiringFirst));
+  }
+
+  /// [listExpiring] as a stream that re-emits on every write.
+  Stream<List<Item>> watchExpiring({DateTime? now}) =>
+      _watch(() => listExpiring(now: now));
 
   /// Everything flagged as sellable.
   List<Item> listSellable({ItemSort sort = ItemSort.nameAsc}) =>
@@ -761,6 +794,7 @@ class ItemRepository {
     _fContainer: (item.container, hlc),
     _fCategory: (item.category, hlc),
     _fLowStockAt: (item.lowStockAt, hlc),
+    _fBestBefore: (item.bestBefore?.toIso8601String(), hlc),
     _fWanted: (item.wanted, hlc),
     _fSellable: (item.sellable, hlc),
     _fNotes: (item.notes, hlc),
@@ -801,6 +835,7 @@ class ItemRepository {
       container: _str(fields[_fContainer]?.$1),
       category: _str(fields[_fCategory]?.$1),
       lowStockAt: _nullableNum(fields[_fLowStockAt]?.$1),
+      bestBefore: _nullableTime(fields[_fBestBefore]?.$1),
       wanted: fields[_fWanted]?.$1 == true,
       sellable: fields[_fSellable]?.$1 == true,
       notes: _str(fields[_fNotes]?.$1),
@@ -862,6 +897,14 @@ class ItemRepository {
 
   static String _str(Object? value) => value is String ? value : '';
 
+  /// Reads an optional stored timestamp.
+  ///
+  /// Unlike [_time] this keeps null rather than falling back to the epoch: an
+  /// absent best-before date means "never goes off", and an epoch fallback
+  /// would render every undated screwdriver as expired since 1970.
+  static DateTime? _nullableTime(Object? value) =>
+      value is String ? DateTime.tryParse(value) : null;
+
   static DateTime _time(Object? value) {
     if (value is! String) return DateTime.fromMillisecondsSinceEpoch(0);
     return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -913,6 +956,15 @@ class ItemRepository {
             b.container.toLowerCase(),
           );
           return byContainer != 0 ? byContainer : _byName(a, b);
+        },
+        ItemSort.expiringFirst => (a, b) {
+          final left = a.bestBefore;
+          final right = b.bestBefore;
+          if (left == null && right == null) return _byName(a, b);
+          if (left == null) return 1;
+          if (right == null) return -1;
+          final byDate = left.compareTo(right);
+          return byDate != 0 ? byDate : _byName(a, b);
         },
         ItemSort.lowStockFirst => (a, b) {
           final byState = _stockRank(a).compareTo(_stockRank(b));

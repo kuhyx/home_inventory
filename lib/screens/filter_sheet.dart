@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
+import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/ui/location_picker.dart';
@@ -134,6 +135,22 @@ class _FilterSheetState extends State<FilterSheet> {
                       ],
                     ),
                     _ChipGroup(
+                      label: 'Best before',
+                      chips: [
+                        for (final state in FreshnessState.values)
+                          _Chip(
+                            label: _freshnessLabel(state),
+                            selected: _filter.freshness.contains(state),
+                            onSelected: () => _toggle(
+                              _filter.freshness,
+                              state,
+                              (next) =>
+                                  _filter = _filter.copyWith(freshness: next),
+                            ),
+                          ),
+                      ],
+                    ),
+                    _ChipGroup(
                       label: 'Flags',
                       chips: [
                         for (final flag in ItemFlag.values)
@@ -197,6 +214,12 @@ class _FilterSheetState extends State<FilterSheet> {
     StockState.ok => 'In stock',
     StockState.low => 'Low',
     StockState.out => 'Out',
+  };
+
+  static String _freshnessLabel(FreshnessState state) => switch (state) {
+    FreshnessState.fresh => 'Fresh',
+    FreshnessState.dueSoon => 'Due soon',
+    FreshnessState.expired => 'Expired',
   };
 
   static String _flagLabel(ItemFlag flag) => switch (flag) {

@@ -40,6 +40,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
   late final TextEditingController _container;
   late final TextEditingController _category;
   late final TextEditingController _lowStockAt;
+  late final TextEditingController _bestBefore;
   late final TextEditingController _notes;
   late bool _wanted;
   late bool _sellable;
@@ -61,6 +62,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     _lowStockAt = TextEditingController(
       text: item?.lowStockAt == null ? '' : formatQuantity(item!.lowStockAt!),
     );
+    _bestBefore = TextEditingController(text: _formatDate(item?.bestBefore));
     _notes = TextEditingController(text: item?.notes ?? '');
     _wanted = item?.wanted ?? false;
     _sellable = item?.sellable ?? false;
@@ -75,12 +77,65 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     _container.dispose();
     _category.dispose();
     _lowStockAt.dispose();
+    _bestBefore.dispose();
     _notes.dispose();
     super.dispose();
   }
 
   static double? _parse(String text) =>
       double.tryParse(text.trim().replaceAll(',', '.'));
+
+  /// The one date shape the field accepts, and the one it writes back.
+  ///
+  /// ISO order rather than anything local: it sorts as text, it is
+  /// unambiguous between the Polish and English readings of `03/04`, and it
+  /// is what the CRDT record already stores.
+  static final RegExp _isoDate = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+
+  static String _formatDate(DateTime? date) => date == null
+      ? ''
+      : '${date.year.toString().padLeft(4, '0')}-'
+            '${date.month.toString().padLeft(2, '0')}-'
+            '${date.day.toString().padLeft(2, '0')}';
+
+  /// Parses the field, or null for blank **and** for anything malformed.
+  ///
+  /// The round-trip check is the whole point. `DateTime.parse` does not
+  /// reject an impossible date — it rolls it over, quietly turning
+  /// `2026-13-45` into 2027-02-14 — so parsing alone would store a date the
+  /// user never typed and then show it back to them as if they had.
+  static DateTime? _parseDate(String text) {
+    final trimmed = text.trim();
+    if (!_isoDate.hasMatch(trimmed)) return null;
+    final parsed = DateTime.tryParse(trimmed);
+    return parsed != null && _formatDate(parsed) == trimmed ? parsed : null;
+  }
+
+  /// Opens the calendar and writes the chosen day back into the field.
+  ///
+  /// Typing stays available alongside it: the picker is faster for "next
+  /// Tuesday" and unbearable for "March 2028", and the field is the one
+  /// source of truth either way.
+  Future<void> _pickDate() async {
+    final current = _parseDate(_bestBefore.text);
+    final anchor = (widget.now ?? DateTime.now)();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? anchor,
+      firstDate: DateTime(anchor.year - 5),
+      lastDate: DateTime(anchor.year + 20),
+    );
+    if (picked == null) return;
+    setState(() => _bestBefore.text = _formatDate(picked));
+  }
+
+  String? _validateDate(String? value) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return null;
+    if (!_isoDate.hasMatch(text)) return 'Use YYYY-MM-DD';
+    if (_parseDate(text) == null) return 'Not a real date';
+    return null;
+  }
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -102,6 +157,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
       container: _container.text.trim(),
       category: _category.text.trim(),
       lowStockAt: threshold,
+      bestBefore: _parseDate(_bestBefore.text),
       wanted: _wanted,
       sellable: _sellable,
       notes: _notes.text.trim(),
@@ -201,6 +257,26 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
                 decimal: true,
               ),
               validator: (value) => _validateNumber(value, required: false),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: SuggestField(
+                    controller: _bestBefore,
+                    label: 'Best before (YYYY-MM-DD, blank for never)',
+                    keyboardType: TextInputType.datetime,
+                    textCapitalization: TextCapitalization.none,
+                    validator: _validateDate,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_today_outlined),
+                  tooltip: 'Pick a date',
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(

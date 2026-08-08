@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
+import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/screens/filter_sheet.dart';
@@ -243,5 +244,41 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(popped.single, isNull);
+  });
+
+  group('the best-before group', () {
+    testWidgets('offers every freshness state', (tester) async {
+      await pumpSheet(tester);
+
+      expect(find.text('Best before'), findsOneWidget);
+      expect(find.text('Fresh'), findsOneWidget);
+      expect(find.text('Due soon'), findsOneWidget);
+      expect(find.text('Expired'), findsOneWidget);
+    });
+
+    testWidgets('selecting one applies it', (tester) async {
+      final popped = await pumpSheet(tester);
+
+      await tester.tap(find.text('Due soon'));
+      await tester.pump();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(popped.single!.freshness, {FreshnessState.dueSoon});
+    });
+
+    testWidgets('tapping a selected one clears it again', (tester) async {
+      final popped = await pumpSheet(
+        tester,
+        initial: const ItemFilter(freshness: {FreshnessState.expired}),
+      );
+
+      await tester.tap(find.text('Expired'));
+      await tester.pump();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(popped.single!.freshness, isEmpty);
+    });
   });
 }

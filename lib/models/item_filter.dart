@@ -1,6 +1,7 @@
 /// Query shape for the item list: what to show, and in what order.
 library;
 
+import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:meta/meta.dart';
 
@@ -33,6 +34,13 @@ enum ItemSort {
 
   /// Out, then low, then fine; scarcest first within each band.
   lowStockFirst,
+
+  /// Soonest best-before date first; everything undated last.
+  ///
+  /// Undated items sort to the end rather than the start because "no date"
+  /// is not "an infinitely distant date" — it is the answer to a different
+  /// question, and burying it keeps the top of the list actionable.
+  expiringFirst,
 }
 
 /// An AND-combined set of list restrictions.
@@ -49,6 +57,7 @@ class ItemFilter {
     this.locationIds = const {},
     this.categories = const {},
     this.stock = const {},
+    this.freshness = const {},
     this.flags = const {},
   });
 
@@ -71,6 +80,13 @@ class ItemFilter {
   /// Stock states to include; empty means any.
   final Set<StockState> stock;
 
+  /// Freshness states to include; empty means any.
+  ///
+  /// A non-empty set excludes **undated** items entirely. Asking for "due
+  /// soon" is a question about the things you put a date on; answering it
+  /// with every screwdriver in the flat would make the facet useless.
+  final Set<FreshnessState> freshness;
+
   /// Flags an item must have. AND-combined: selecting both means an item must
   /// be wanted *and* sellable.
   final Set<ItemFlag> flags;
@@ -81,6 +97,7 @@ class ItemFilter {
       locationIds.isEmpty &&
       categories.isEmpty &&
       stock.isEmpty &&
+      freshness.isEmpty &&
       flags.isEmpty;
 
   /// How many facets are active, for the filter button's badge.
@@ -93,16 +110,21 @@ class ItemFilter {
     if (locationIds.isNotEmpty) count++;
     if (categories.isNotEmpty) count++;
     if (stock.isNotEmpty) count++;
+    if (freshness.isNotEmpty) count++;
     if (flags.isNotEmpty) count++;
     return count;
   }
 
-  /// Whether [item] passes every facet.
+  /// Whether [item] passes every facet, as of [asOf].
   ///
   /// Lives on the filter rather than in the repository so the same predicate
   /// backs both the live list and any preset (the shopping screen's two tabs
   /// are just filters).
-  bool matches(Item item) {
+  ///
+  /// [asOf] is only read when [freshness] is non-empty — every other facet is
+  /// clock-independent — so the default of "now" cannot make an otherwise
+  /// pure predicate answer differently on two consecutive builds.
+  bool matches(Item item, {DateTime? asOf}) {
     if (!_matchesQuery(item)) return false;
     if (locationIds.isNotEmpty && !locationIds.contains(item.locationId)) {
       return false;
@@ -111,9 +133,15 @@ class ItemFilter {
       return false;
     }
     if (stock.isNotEmpty && !stock.contains(item.stockState)) return false;
+    if (freshness.isNotEmpty && !_matchesFreshness(item, asOf)) return false;
     if (flags.contains(ItemFlag.wanted) && !item.wanted) return false;
     if (flags.contains(ItemFlag.sellable) && !item.sellable) return false;
     return true;
+  }
+
+  bool _matchesFreshness(Item item, DateTime? asOf) {
+    final state = item.freshnessAt(asOf ?? DateTime.now())?.state;
+    return state != null && freshness.contains(state);
   }
 
   bool _matchesQuery(Item item) {
@@ -141,6 +169,7 @@ class ItemFilter {
       _sameSet(other.locationIds, locationIds) &&
       _sameSet(other.categories, categories) &&
       _sameSet(other.stock, stock) &&
+      _sameSet(other.freshness, freshness) &&
       _sameSet(other.flags, flags);
 
   @override
@@ -151,6 +180,7 @@ class ItemFilter {
     _setHash(locationIds),
     _setHash(categories),
     _setHash(stock),
+    _setHash(freshness),
     _setHash(flags),
   );
 
@@ -167,12 +197,14 @@ class ItemFilter {
     Set<String>? locationIds,
     Set<String>? categories,
     Set<StockState>? stock,
+    Set<FreshnessState>? freshness,
     Set<ItemFlag>? flags,
   }) => ItemFilter(
     query: query ?? this.query,
     locationIds: locationIds ?? this.locationIds,
     categories: categories ?? this.categories,
     stock: stock ?? this.stock,
+    freshness: freshness ?? this.freshness,
     flags: flags ?? this.flags,
   );
 }

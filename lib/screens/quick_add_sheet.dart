@@ -82,6 +82,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
         container: _container.text.trim(),
         category: '',
         lowStockAt: null,
+        bestBefore: null,
         wanted: false,
         sellable: false,
         notes: '',
