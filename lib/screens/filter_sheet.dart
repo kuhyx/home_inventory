@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
+import 'package:home_inventory/ui/location_picker.dart';
 import 'package:home_inventory/ui/theme.dart';
 
 /// Modal editor for an [ItemFilter].
@@ -13,10 +14,10 @@ import 'package:home_inventory/ui/theme.dart';
 /// can tell "cleared everything" apart from "changed my mind", which are the
 /// same empty filter otherwise.
 ///
-/// The chips come from what is actually in the inventory
-/// ([ItemRepository.knownRooms] and friends) rather than a fixed vocabulary:
-/// rooms, containers and categories are free text here, so there is no closed
-/// set to enumerate.
+/// The chips come from what is actually in the inventory rather than a fixed
+/// vocabulary: categories are free text, so there is no closed set to
+/// enumerate. Places are the exception — they are real records, so they get a
+/// tree picker instead of chips.
 class FilterSheet extends StatefulWidget {
   /// Creates the sheet, starting from [initial].
   const FilterSheet({
@@ -45,19 +46,49 @@ class _FilterSheetState extends State<FilterSheet> {
     setState(() => apply(next));
   }
 
+  /// Label for the place facet: the deepest chosen place, plus a count when
+  /// more than one branch is selected.
+  String _placeLabel(ItemRepository repository) {
+    final named = _filter.locationIds
+        .map(repository.pathLabel)
+        .where((label) => label.isNotEmpty)
+        .toList();
+    if (named.isEmpty) return 'Somewhere';
+    // The selection is a whole subtree, so the shortest path is its root and
+    // the only part worth showing.
+    named.sort((a, b) => a.length.compareTo(b.length));
+    return named.first;
+  }
+
+  Future<void> _pickPlace(ItemRepository repository) async {
+    final choice = await showLocationPicker(
+      context,
+      repository: repository,
+      title: 'Show things in',
+      rootLabel: 'Anywhere',
+    );
+    if (choice == null) return;
+    final place = choice.location;
+    setState(() {
+      _filter = _filter.copyWith(
+        // Whole subtree, so "the hallway" includes its shelves.
+        locationIds: place == null
+            ? const <String>{}
+            : repository.subtreeIds(place.id),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final repository = widget.repository;
-    // Containers are listed for the selected rooms only when there are any:
-    // "Desk drawer 2" is meaningless while every room is still in scope, and
-    // an unnarrowed list of every container in the flat is unusable.
-    final containers = _filter.rooms.isEmpty
-        ? repository.knownContainers()
-        : <String>{
-            for (final room in _filter.rooms)
-              ...repository.knownContainers(room: room),
-          }.toList();
+    // The place facet is a picker rather than a chip row: at arbitrary depth a
+    // flat list of every shelf in the flat is unusable, and the chips could
+    // not show which shelf belongs to which cupboard anyway.
+    final placeLabel = _filter.locationIds.isEmpty
+        ? 'Anywhere'
+        : _placeLabel(repository);
 
     return SafeArea(
       child: Padding(
@@ -117,37 +148,15 @@ class _FilterSheetState extends State<FilterSheet> {
                           ),
                       ],
                     ),
-                    _ChipGroup(
-                      label: 'Rooms',
-                      chips: [
-                        for (final room in repository.knownRooms())
-                          _Chip(
-                            label: room,
-                            selected: _filter.rooms.contains(room),
-                            onSelected: () => _toggle(
-                              _filter.rooms,
-                              room,
-                              (next) => _filter = _filter.copyWith(rooms: next),
-                            ),
-                          ),
-                      ],
-                    ),
-                    _ChipGroup(
-                      label: 'Containers',
-                      chips: [
-                        for (final container in containers)
-                          _Chip(
-                            label: container,
-                            selected: _filter.containers.contains(container),
-                            onSelected: () => _toggle(
-                              _filter.containers,
-                              container,
-                              (next) => _filter = _filter.copyWith(
-                                containers: next,
-                              ),
-                            ),
-                          ),
-                      ],
+                    _PlaceFacet(
+                      label: placeLabel,
+                      selected: _filter.locationIds.isNotEmpty,
+                      onPick: () => _pickPlace(repository),
+                      onClear: () => setState(
+                        () => _filter = _filter.copyWith(
+                          locationIds: const <String>{},
+                        ),
+                      ),
                     ),
                     _ChipGroup(
                       label: 'Categories',
@@ -197,6 +206,65 @@ class _FilterSheetState extends State<FilterSheet> {
 }
 
 /// A labelled row of chips, hidden entirely when it has nothing to offer.
+/// The "Place" facet: a button opening the tree picker, plus a clear.
+///
+/// Not a chip row like the other facets, because the places form a tree and a
+/// flat row of every shelf in the flat says nothing about which cupboard each
+/// one is in.
+class _PlaceFacet extends StatelessWidget {
+  const _PlaceFacet({
+    required this.label,
+    required this.selected,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Place',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPick,
+                  icon: const Icon(Icons.place_outlined),
+                  label: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(label, overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+              ),
+              if (selected)
+                IconButton(
+                  onPressed: onClear,
+                  icon: const Icon(Icons.close),
+                  tooltip: 'Anywhere',
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ChipGroup extends StatelessWidget {
   const _ChipGroup({required this.label, required this.chips});
 

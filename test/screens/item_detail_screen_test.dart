@@ -38,6 +38,22 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
+  testWidgets('resolves a filed item through the place tree', (tester) async {
+    final room = await repo.createLocation(name: 'Korytarz', now: at);
+    final shelf = await repo.createLocation(
+      name: 'Szafka',
+      parentId: room.id,
+      now: at,
+    );
+    await repo.upsert(
+      itemFixture(name: 'Flour', locationId: shelf.id, updatedAt: at),
+    );
+
+    await pumpDetail(tester);
+
+    expect(find.text('Korytarz › Szafka'), findsOneWidget);
+  });
+
   testWidgets('shows the name, quantity, location and notes', (tester) async {
     await repo.upsert(
       itemFixture(

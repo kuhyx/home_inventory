@@ -42,17 +42,17 @@ void main() {
     });
   });
 
-  group('location', () {
+  group('legacyLocation', () {
     test('joins room and container', () {
       final item = itemFixture(room: 'Kitchen', container: 'Top drawer');
 
-      expect(item.location, 'Kitchen › Top drawer');
+      expect(item.legacyLocation, 'Kitchen › Top drawer');
     });
 
     test('omits an empty part rather than leaving a dangling separator', () {
-      expect(itemFixture(room: 'Kitchen').location, 'Kitchen');
-      expect(itemFixture(container: 'Box A').location, 'Box A');
-      expect(itemFixture().location, '');
+      expect(itemFixture(room: 'Kitchen').legacyLocation, 'Kitchen');
+      expect(itemFixture(container: 'Box A').legacyLocation, 'Box A');
+      expect(itemFixture().legacyLocation, '');
     });
   });
 
@@ -169,15 +169,17 @@ void main() {
     });
   });
 
-  test('toString names the item and where it is', () {
+  test('toString names the item and where it is filed', () {
     final item = itemFixture(
       name: 'Flour',
       quantity: 2.5,
       unit: 'kg',
-      room: 'Kitchen',
+      locationId: 'loc1',
     );
 
     expect(item.toString(), contains('Flour'));
-    expect(item.toString(), contains('Kitchen'));
+    // The id rather than a name: resolving the path needs the other records,
+    // which a model cannot reach.
+    expect(item.toString(), contains('loc1'));
   });
 }

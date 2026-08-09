@@ -144,7 +144,9 @@ void main() {
   });
 
   testWidgets('the filter badge counts active facets', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Cable', quantity: 7, category: 'Tools'),
+    );
     await pumpList(tester);
 
     // No badge label at all while nothing is restricted — a "0" would read as
@@ -153,7 +155,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.filter_list));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilterChip, 'Office'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
     await tester.pump();
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
@@ -163,12 +165,14 @@ void main() {
   });
 
   testWidgets('dismissing the filter sheet changes nothing', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Cable', quantity: 7, category: 'Tools'),
+    );
     await pumpList(tester);
 
     await tester.tap(find.byIcon(Icons.filter_list));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilterChip, 'Office'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
     await tester.pump();
     // Back out instead of applying: the selection must not leak through.
     await tester.tapAt(const Offset(10, 10));
@@ -202,8 +206,12 @@ void main() {
   // The locations tab hands a filter across; the items tab has to adopt it
   // even though it is already built and sitting in the IndexedStack.
   testWidgets('adopts a filter pushed in from another tab', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
-    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Cable', locationId: 'office'),
+    );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Flour', locationId: 'kitchen'),
+    );
 
     await pumpApp(tester, ItemsScreen(repository: repo, now: () => at));
     await tester.pump();
@@ -212,7 +220,7 @@ void main() {
       ItemsScreen(
         repository: repo,
         now: () => at,
-        requestedFilter: const ItemFilter(rooms: {'Kitchen'}),
+        requestedFilter: const ItemFilter(locationIds: {'kitchen'}),
       ),
     );
     await tester.pump();
@@ -222,8 +230,12 @@ void main() {
   });
 
   testWidgets('a pushed filter clears a stale search term', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
-    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Cable', locationId: 'office'),
+    );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Flour', locationId: 'kitchen'),
+    );
     await pumpList(tester);
 
     await tester.enterText(find.byType(TextField).first, 'cab');
@@ -233,7 +245,7 @@ void main() {
       ItemsScreen(
         repository: repo,
         now: () => at,
-        requestedFilter: const ItemFilter(rooms: {'Kitchen'}),
+        requestedFilter: const ItemFilter(locationIds: {'kitchen'}),
       ),
     );
     await tester.pump();
@@ -250,9 +262,13 @@ void main() {
   // has changed since — the shell hands the same object back on every tab
   // switch.
   testWidgets('the same filter instance is not re-adopted', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
-    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
-    const pushed = ItemFilter(rooms: {'Kitchen'});
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Cable', locationId: 'office'),
+    );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Flour', locationId: 'kitchen'),
+    );
+    const pushed = ItemFilter(locationIds: {'kitchen'});
 
     await pumpApp(
       tester,
@@ -277,8 +293,12 @@ void main() {
   // have cleared the filter in between, and comparing by value rather than
   // identity would make that tap do nothing at all.
   testWidgets('a re-requested equal filter is adopted again', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
-    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Cable', locationId: 'office'),
+    );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Flour', locationId: 'kitchen'),
+    );
 
     await pumpApp(
       tester,
@@ -287,7 +307,7 @@ void main() {
         now: () => at,
         // Built the way HomeShell builds it — at run time, so each tap is a
         // fresh object rather than a canonicalised const.
-        requestedFilter: ItemFilter(rooms: {'Kitchen'}),
+        requestedFilter: ItemFilter(locationIds: {'kitchen'}),
       ),
     );
     await tester.pump();
@@ -299,7 +319,7 @@ void main() {
       ItemsScreen(
         repository: repo,
         now: () => at,
-        requestedFilter: ItemFilter(rooms: {'Kitchen'}),
+        requestedFilter: ItemFilter(locationIds: {'kitchen'}),
       ),
     );
     await tester.pump();

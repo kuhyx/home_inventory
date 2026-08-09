@@ -95,6 +95,9 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
       name: _name.text.trim(),
       quantity: quantity,
       unit: _unit.text.trim(),
+      // Kept as-is: this form still edits the legacy strings, and the
+      // migration folds them into a place record on the next open.
+      locationId: existing?.locationId ?? '',
       room: _room.text.trim(),
       container: _container.text.trim(),
       category: _category.text.trim(),

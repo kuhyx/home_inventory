@@ -40,6 +40,7 @@ class Item {
     required this.name,
     required this.quantity,
     required this.unit,
+    required this.locationId,
     required this.room,
     required this.container,
     required this.category,
@@ -63,11 +64,24 @@ class Item {
   /// Unit of [quantity], e.g. `kg`. Empty means a plain count.
   final String unit;
 
-  /// Coarse location, e.g. `Kitchen`. Free text, autocompleted from existing
-  /// values rather than constrained to an enum.
+  /// Where this lives: the id of a `Location`, or empty when unfiled.
+  ///
+  /// Empty-string-as-absent rather than a nullable field, matching how [room]
+  /// and [container] already treat `''`, so [copyWith] needs no `clearX` flag
+  /// for the common act of taking an item out of its place.
+  final String locationId;
+
+  /// Legacy coarse location, e.g. `Kitchen`.
+  ///
+  /// Superseded by [locationId]. Still written so a device on an older build
+  /// keeps showing places while the new build rolls out, but no longer read
+  /// for filtering or the tree. Deleted once every device is updated: two
+  /// sources of truth for one fact eventually disagree.
   final String room;
 
-  /// Fine location within [room], e.g. `Top drawer left`.
+  /// Legacy fine location within [room], e.g. `Top drawer left`.
+  ///
+  /// Superseded by [locationId]; see [room].
   final String container;
 
   /// Free-text grouping, e.g. `Cables`. Free text on purpose: the span from
@@ -107,11 +121,16 @@ class Item {
     return StockState.ok;
   }
 
-  /// Human-readable place, e.g. `Kitchen › Top drawer left`.
+  /// Human-readable place from the legacy [room]/[container] strings.
   ///
   /// Skips empty parts, so an item with only a room reads as just the room
   /// rather than a dangling separator.
-  String get location =>
+  ///
+  /// Only a fallback for an item that has not been migrated yet. The real
+  /// label comes from `ItemRepository.pathLabel(locationId)`, because
+  /// resolving an arbitrarily deep path means walking other records and a
+  /// model has no access to them.
+  String get legacyLocation =>
       [room, container].where((part) => part.isNotEmpty).join(' › ');
 
   /// Whether this item belongs on the shopping list: anything not fully
@@ -126,6 +145,7 @@ class Item {
     String? name,
     double? quantity,
     String? unit,
+    String? locationId,
     String? room,
     String? container,
     String? category,
@@ -141,6 +161,7 @@ class Item {
     name: name ?? this.name,
     quantity: quantity ?? this.quantity,
     unit: unit ?? this.unit,
+    locationId: locationId ?? this.locationId,
     room: room ?? this.room,
     container: container ?? this.container,
     category: category ?? this.category,
@@ -155,5 +176,5 @@ class Item {
   @override
   String toString() =>
       'Item(id: $id, name: $name, quantity: $quantity $unit, '
-      'location: $location)';
+      'locationId: $locationId)';
 }

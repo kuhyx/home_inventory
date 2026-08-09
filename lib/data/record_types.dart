@@ -42,6 +42,14 @@ const Duration kAdjustmentHorizon = Duration(days: 180);
 bool isAdjustmentRecord(Record record) =>
     record.fields[kTypeField]?.$1 == kTypeAdjustment;
 
+/// Whether [record] is a place.
+///
+/// An exact match, unlike [isItemRecord]: there is no pre-[kTypeField] era of
+/// location records to be lenient about, since the kind arrived after the
+/// discriminator did.
+bool isLocationRecord(Record record) =>
+    record.fields[kTypeField]?.$1 == kTypeLocation;
+
 /// Whether [record] should be read as an item.
 ///
 /// An **allowlist**, not the negation of [isAdjustmentRecord], and the

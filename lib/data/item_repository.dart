@@ -4,12 +4,15 @@ library;
 import 'dart:async';
 
 import 'package:crdt_sync/crdt_sync.dart';
+import 'package:home_inventory/data/derived_ids.dart';
+import 'package:home_inventory/data/location_migration.dart';
 import 'package:home_inventory/data/record_types.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/models/inventory_summary.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
-import 'package:home_inventory/models/location_node.dart';
+import 'package:home_inventory/models/location.dart';
+import 'package:home_inventory/models/location_tree.dart';
 import 'package:home_inventory/models/rate_hint.dart';
 
 // Deliberately free of `dart:io`: the desktop app is a web build, and one
@@ -42,6 +45,7 @@ class ItemRepository {
   static const _fName = 'name';
   static const _fQuantity = 'quantity';
   static const _fUnit = 'unit';
+  static const _fLocationId = 'location_id';
   static const _fRoom = 'room';
   static const _fContainer = 'container';
   static const _fCategory = 'category';
@@ -56,6 +60,10 @@ class ItemRepository {
   static const _fItemId = 'item_id';
   static const _fDelta = 'delta';
   static const _fSource = 'source';
+
+  // Location field names.
+  static const _fParentId = 'parent_id';
+  static const _fSortKey = 'sort_key';
 
   /// SharedPreferences key holding this device's stable CRDT node id.
   static const kNodeId = 'crdt.nodeId';
@@ -78,11 +86,45 @@ class ItemRepository {
     required String nodeId,
     DateTime? now,
   }) async {
+    final at = now ?? DateTime.now();
     final store = LogStore(persistence: persistence, nodeId: nodeId);
     final loaded = await store.load();
-    final pruned = dropAncientAdjustments(loaded, now ?? DateTime.now());
+    final pruned = dropAncientAdjustments(loaded, at);
     if (pruned.length != loaded.length) await store.replaceAll(pruned);
-    return ItemRepository._(store, nodeId);
+    final repository = ItemRepository._(store, nodeId);
+    await repository.runLocationMigration(now: at);
+    return repository;
+  }
+
+  /// Folds any legacy `room`/`container` strings into [Location] records.
+  ///
+  /// Idempotent and convergent — see `planLocationMigration` for why — so it
+  /// is safe to call on every open and after every sync. It must run after a
+  /// sync too, not only on load: a peer still on the old build pushes items
+  /// that carry the strings and no `location_id`, and those need folding on
+  /// arrival or they stay invisible in the tree.
+  ///
+  /// Deliberately *not* run inside `syncLog`'s `decode` hook, unlike pruning.
+  /// Pruning removes records; this one adds them, and adding inside `decode`
+  /// would grow the merge input on every tick.
+  Future<void> runLocationMigration({DateTime? now}) async {
+    final plan = planLocationMigration(
+      _liveItems(),
+      _liveLocations(),
+      now ?? DateTime.now(),
+    );
+    if (plan.isEmpty) return;
+    for (final location in plan.locations) {
+      await _upsertFields(
+        location.id,
+        _fieldsForLocation(location, _store.nextHlc()),
+      );
+    }
+    for (final entry in plan.itemLocationIds.entries) {
+      await _upsertFields(entry.key, {
+        _fLocationId: (entry.value, _store.nextHlc()),
+      });
+    }
   }
 
   /// Opens a transient in-memory log; intended for tests.
@@ -209,42 +251,247 @@ class ItemRepository {
   /// Units already in use, most-used first.
   List<String> knownUnits() => _rankedValues((item) => item.unit);
 
-  /// The room → container tree, with item counts, for the locations screen.
-  List<LocationNode> locationTree() {
-    final byRoom = <String, Map<String, int>>{};
+  // ---------------------------------------------------------------------
+  // Locations
+  // ---------------------------------------------------------------------
+
+  /// Every live place, in no particular order.
+  List<Location> listLocations() => _liveLocations().toList();
+
+  /// [listLocations] as a stream that re-emits on every write.
+  Stream<List<Location>> watchLocations() => _watch(listLocations);
+
+  /// The place with [id], or null if absent or deleted.
+  Location? location(String id) {
+    final record = _store.get(id);
+    if (record == null || record.deleted) return null;
+    if (!isLocationRecord(record)) return null;
+    return _toLocation(record);
+  }
+
+  /// The whole place tree, with item counts, deepest structure intact.
+  ///
+  /// **Cycles are handled here, not only at the writer.** Under CRDT merge a
+  /// cycle is not hypothetical: this device moves A under B while another
+  /// moves B under A, each write wins its own field, and the merged graph has
+  /// a two-node loop that a naive walk would follow forever. So the tree is
+  /// built by walking down from the roots with a visited set, and anything
+  /// never reached — a cycle, or a child of a deleted parent — is re-attached
+  /// at the top level rather than vanishing. That rule is a pure function of
+  /// the merged log, so both devices show the same tree.
+  List<LocationTreeNode> locationTree() {
+    final locations = {for (final l in _liveLocations()) l.id: l};
+
+    final direct = <String, int>{};
     for (final item in _liveItems()) {
-      byRoom
-          .putIfAbsent(item.room, () => <String, int>{})
-          .update(item.container, (count) => count + 1, ifAbsent: () => 1);
+      if (item.locationId.isEmpty) continue;
+      if (!locations.containsKey(item.locationId)) continue;
+      direct.update(item.locationId, (n) => n + 1, ifAbsent: () => 1);
     }
-    final nodes =
-        byRoom.entries.map((entry) {
-          final containers =
-              entry.value.entries
-                  .map(
-                    (c) => ContainerNode(name: c.key, itemCount: c.value),
-                  )
-                  .toList()
-                ..sort(_byCountThenName);
-          final total = entry.value.values.fold<int>(0, (sum, n) => sum + n);
-          return LocationNode(
-            room: entry.key,
-            containers: containers,
-            itemCount: total,
-          );
-        }).toList()..sort((a, b) {
-          final byCount = b.itemCount.compareTo(a.itemCount);
-          return byCount != 0 ? byCount : a.room.compareTo(b.room);
-        });
-    return nodes;
+
+    final childIds = <String?, List<String>>{};
+    for (final entry in locations.entries) {
+      final parent = entry.value.parentId;
+      // A parent that is gone (tombstoned, or never synced) makes this a root,
+      // so deleting a cupboard never takes its shelves out of sight with it.
+      final resolved = parent != null && locations.containsKey(parent)
+          ? parent
+          : null;
+      childIds.putIfAbsent(resolved, () => <String>[]).add(entry.key);
+    }
+
+    final visited = <String>{};
+
+    List<LocationTreeNode> build(String? parentId, int depth) {
+      final ids = childIds[parentId] ?? const <String>[];
+      final nodes = <LocationTreeNode>[];
+      for (final id in ids) {
+        if (!visited.add(id)) continue;
+        final children = build(id, depth + 1);
+        final own = direct[id] ?? 0;
+        nodes.add(
+          LocationTreeNode(
+            location: locations[id]!,
+            children: children,
+            directItemCount: own,
+            totalItemCount:
+                own + children.fold<int>(0, (sum, c) => sum + c.totalItemCount),
+            depth: depth,
+          ),
+        );
+      }
+      return nodes..sort(_bySortKeyThenName);
+    }
+
+    final roots = build(null, 0);
+
+    // Anything unreachable from a root is in a cycle. Re-root it so the user
+    // can still see and fix it; dropping it would look like data loss.
+    final stranded = locations.keys.where((id) => !visited.contains(id));
+    for (final id in stranded.toList()) {
+      if (visited.contains(id)) continue;
+      visited.add(id);
+      final children = build(id, 1);
+      final own = direct[id] ?? 0;
+      roots.add(
+        LocationTreeNode(
+          location: locations[id]!,
+          children: children,
+          directItemCount: own,
+          totalItemCount:
+              own + children.fold<int>(0, (sum, c) => sum + c.totalItemCount),
+          depth: 0,
+        ),
+      );
+    }
+
+    return roots..sort(_bySortKeyThenName);
   }
 
   /// [locationTree] as a stream that re-emits on every write.
-  Stream<List<LocationNode>> watchLocationTree() => _watch(locationTree);
+  Stream<List<LocationTreeNode>> watchLocationTree() => _watch(locationTree);
 
-  static int _byCountThenName(ContainerNode a, ContainerNode b) {
-    final byCount = b.itemCount.compareTo(a.itemCount);
-    return byCount != 0 ? byCount : a.name.compareTo(b.name);
+  /// The chain of names from the top down to [locationId].
+  ///
+  /// Empty when the id is unknown. Stops at a cycle rather than looping.
+  List<String> pathOf(String locationId) {
+    final names = <String>[];
+    final seen = <String>{};
+    var current = location(locationId);
+    while (current != null && seen.add(current.id)) {
+      names.insert(0, current.name);
+      final parent = current.parentId;
+      current = parent == null ? null : location(parent);
+    }
+    return names;
+  }
+
+  /// [pathOf] joined for display, e.g. `korytarz › szafka z lewej`.
+  String pathLabel(String locationId) => pathOf(locationId).join(' › ');
+
+  /// Where [item] is, as one label.
+  ///
+  /// Falls back to the legacy strings for an item the migration has not
+  /// reached — one pulled in mid-sync from a device still on the old build,
+  /// which would otherwise read as "nowhere" until the next app start.
+  String locationLabelFor(Item item) => item.locationId.isEmpty
+      ? item.legacyLocation
+      : pathLabel(item.locationId);
+
+  /// [locationId] plus every place beneath it.
+  ///
+  /// What "show me everything in the hallway" means: filtering by one id alone
+  /// would miss everything on its shelves. Cycle-safe via the visited set.
+  Set<String> subtreeIds(String locationId) {
+    final byParent = <String, List<String>>{};
+    for (final l in _liveLocations()) {
+      final parent = l.parentId;
+      if (parent != null) byParent.putIfAbsent(parent, () => []).add(l.id);
+    }
+    final ids = <String>{};
+    void walk(String id) {
+      // The visited set is what makes a merged-in cycle terminate here.
+      if (!ids.add(id)) return;
+      (byParent[id] ?? const <String>[]).forEach(walk);
+    }
+
+    walk(locationId);
+    return ids;
+  }
+
+  /// Creates a place called [name] under [parentId].
+  ///
+  /// The id is derived, not minted, so this is idempotent: creating "Garage"
+  /// twice — here and on another device, offline — yields one record, not two.
+  /// Returns the existing place when it is already there.
+  Future<Location> createLocation({
+    required String name,
+    String? parentId,
+    double sortKey = 0,
+    DateTime? now,
+  }) async {
+    final at = now ?? DateTime.now();
+    final id = derivedLocationId(parentId, name);
+    final existing = location(id);
+    if (existing != null) return existing;
+    final created = Location(
+      id: id,
+      name: name.trim(),
+      parentId: parentId,
+      sortKey: sortKey,
+      createdAt: at,
+      updatedAt: at,
+    );
+    await _upsertFields(id, _fieldsForLocation(created, _store.nextHlc()));
+    return created;
+  }
+
+  /// Whether [parentId] already holds a child called [name].
+  ///
+  /// Derived ids mean two same-named siblings would collapse onto one record,
+  /// so the create/rename UI has to refuse the collision up front.
+  bool hasChildNamed(String? parentId, String name, {String? ignoringId}) {
+    final folded = foldKey(name);
+    return _liveLocations().any(
+      (l) =>
+          l.id != ignoringId &&
+          l.parentId == parentId &&
+          foldKey(l.name) == folded,
+    );
+  }
+
+  /// Renames [id]. The record id deliberately does not change with it.
+  Future<void> renameLocation(String id, String name, {DateTime? now}) async {
+    if (location(id) == null) return;
+    final at = now ?? DateTime.now();
+    final hlc = _store.nextHlc();
+    await _upsertFields(id, {
+      _fName: (name.trim(), hlc),
+      _fUpdatedAt: (at.toIso8601String(), hlc),
+    });
+  }
+
+  /// Re-parents [id] under [newParentId], or to the top level when null.
+  ///
+  /// Refuses a move into the mover's own subtree, which would orphan the
+  /// branch. That check is the user-facing guard only — it cannot see a
+  /// concurrent move on another device, which is why [locationTree] breaks
+  /// cycles on read as well.
+  Future<bool> moveLocation(
+    String id,
+    String? newParentId, {
+    DateTime? now,
+  }) async {
+    if (location(id) == null) return false;
+    if (id == newParentId) return false;
+    if (newParentId != null && subtreeIds(id).contains(newParentId)) {
+      return false;
+    }
+    final at = now ?? DateTime.now();
+    final hlc = _store.nextHlc();
+    await _upsertFields(id, {
+      _fParentId: (newParentId, hlc),
+      _fUpdatedAt: (at.toIso8601String(), hlc),
+    });
+    return true;
+  }
+
+  /// Deletes [id], leaving its children and items in place.
+  ///
+  /// Never cascades. A sticky CRDT delete plus a cascade means one mis-tap on
+  /// a phone removes a whole wing of the tree on every device, with no undo;
+  /// orphaned children resurface at the top level instead, and items filed in
+  /// the deleted place read as unfiled.
+  Future<void> deleteLocation(String id) => _store.delete(id);
+
+  /// How many live items are filed at exactly [locationId].
+  int itemCountAt(String locationId) =>
+      _liveItems().where((i) => i.locationId == locationId).length;
+
+  static int _bySortKeyThenName(LocationTreeNode a, LocationTreeNode b) {
+    final bySort = a.location.sortKey.compareTo(b.location.sortKey);
+    if (bySort != 0) return bySort;
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
 
   // ---------------------------------------------------------------------
@@ -344,6 +591,25 @@ class ItemRepository {
       at: at,
     );
     return updated;
+  }
+
+  /// Stamps only [changed] on the record with [id], keeping every other
+  /// field's existing clock.
+  ///
+  /// The partial-write primitive behind every targeted edit. Writing a whole
+  /// record instead re-stamps every field with a fresh clock, which makes this
+  /// device's stale copy of an untouched field outrank a newer edit made
+  /// elsewhere — so renaming a place here would silently revert a move made on
+  /// the phone. Spreading the existing fields is what keeps per-field
+  /// last-writer-wins actually per-field.
+  Future<void> _upsertFields(String id, Map<String, Field> changed) async {
+    final existing = _store.get(id);
+    await _store.upsert(
+      Record(
+        id: id,
+        fields: {...?existing?.fields, ...changed},
+      ),
+    );
   }
 
   Future<void> _appendAdjustment({
@@ -490,6 +756,7 @@ class ItemRepository {
     _fName: (item.name, hlc),
     _fQuantity: (item.quantity, hlc),
     _fUnit: (item.unit, hlc),
+    _fLocationId: (item.locationId, hlc),
     _fRoom: (item.room, hlc),
     _fContainer: (item.container, hlc),
     _fCategory: (item.category, hlc),
@@ -529,6 +796,7 @@ class ItemRepository {
       name: _str(fields[_fName]?.$1),
       quantity: _num(fields[_fQuantity]?.$1, 0),
       unit: _str(fields[_fUnit]?.$1),
+      locationId: _str(fields[_fLocationId]?.$1),
       room: _str(fields[_fRoom]?.$1),
       container: _str(fields[_fContainer]?.$1),
       category: _str(fields[_fCategory]?.$1),
@@ -536,6 +804,30 @@ class ItemRepository {
       wanted: fields[_fWanted]?.$1 == true,
       sellable: fields[_fSellable]?.$1 == true,
       notes: _str(fields[_fNotes]?.$1),
+      createdAt: _time(fields[_fCreatedAt]?.$1),
+      updatedAt: _time(fields[_fUpdatedAt]?.$1),
+    );
+  }
+
+  static Map<String, Field> _fieldsForLocation(Location location, Hlc hlc) => {
+    kTypeField: (kTypeLocation, hlc),
+    _fName: (location.name, hlc),
+    _fParentId: (location.parentId, hlc),
+    _fSortKey: (location.sortKey, hlc),
+    _fCreatedAt: (location.createdAt.toIso8601String(), hlc),
+    _fUpdatedAt: (location.updatedAt.toIso8601String(), hlc),
+  };
+
+  Location _toLocation(Record record) {
+    final fields = record.fields;
+    final parent = fields[_fParentId]?.$1;
+    return Location(
+      id: record.id,
+      name: _str(fields[_fName]?.$1),
+      // Anything that is not a non-empty string reads as "top level", so a
+      // null, a missing field and a blank all mean the same thing.
+      parentId: parent is String && parent.isNotEmpty ? parent : null,
+      sortKey: _num(fields[_fSortKey]?.$1, 0),
       createdAt: _time(fields[_fCreatedAt]?.$1),
       updatedAt: _time(fields[_fUpdatedAt]?.$1),
     );
@@ -581,6 +873,10 @@ class ItemRepository {
 
   Iterable<Item> _liveItems() =>
       _store.values.where((r) => !r.deleted && isItemRecord(r)).map(_toItem);
+
+  Iterable<Location> _liveLocations() => _store.values
+      .where((r) => !r.deleted && isLocationRecord(r))
+      .map(_toLocation);
 
   List<String> _rankedValues(
     String Function(Item) select, {

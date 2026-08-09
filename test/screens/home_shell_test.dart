@@ -65,9 +65,15 @@ void main() {
     expect(find.text('To buy'), findsOneWidget);
   });
 
-  testWidgets('tapping a room shows it on the items tab', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', name: 'Cable', room: 'Office'));
-    await repo.upsert(itemFixture(id: 'b', name: 'Flour', room: 'Kitchen'));
+  testWidgets('tapping a place shows it on the items tab', (tester) async {
+    final office = await repo.createLocation(name: 'Office', now: at);
+    final kitchen = await repo.createLocation(name: 'Kitchen', now: at);
+    await repo.upsert(
+      itemFixture(id: 'a', name: 'Cable', locationId: office.id),
+    );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Flour', locationId: kitchen.id),
+    );
     await pumpShell(tester);
 
     await tester.tap(find.text('Locations'));
@@ -77,23 +83,23 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Back on the items tab, narrowed to the busiest room's contents. Both
-    // rooms hold one item, so the tree orders them by name: Kitchen first.
+    // Siblings order by name, so Kitchen leads.
     expect(find.text('Flour'), findsOneWidget);
     expect(find.text('Cable'), findsNothing);
   });
 
-  testWidgets('tapping a container narrows to it', (tester) async {
-    await repo.upsert(
-      itemFixture(
-        id: 'a',
-        name: 'Cable',
-        room: 'Office',
-        container: 'Drawer 2',
-      ),
+  testWidgets('tapping a nested place narrows to it', (tester) async {
+    final office = await repo.createLocation(name: 'Office', now: at);
+    final drawer = await repo.createLocation(
+      name: 'Drawer 2',
+      parentId: office.id,
+      now: at,
     );
     await repo.upsert(
-      itemFixture(id: 'b', name: 'Stapler', room: 'Office'),
+      itemFixture(id: 'a', name: 'Cable', locationId: drawer.id),
+    );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Stapler', locationId: office.id),
     );
     await pumpShell(tester);
 
@@ -108,33 +114,36 @@ void main() {
     expect(find.text('Stapler'), findsNothing);
   });
 
-  // 'Loose in the room' is an empty container name, which is a real value —
-  // not "no container filter". Getting this wrong silently shows the whole
-  // room instead of the handful of items lying loose in it.
-  testWidgets('tapping the loose-items row narrows to no container', (
+  // Asking for a room means the room *and everything in it*. Filtering on the
+  // one id alone would hide whatever sits on its shelves, which reads as data
+  // loss rather than as a narrow filter.
+  testWidgets('showing a place includes everything nested inside', (
     tester,
   ) async {
-    await repo.upsert(
-      itemFixture(
-        id: 'a',
-        name: 'Cable',
-        room: 'Office',
-        container: 'Drawer 2',
-      ),
+    final office = await repo.createLocation(name: 'Office', now: at);
+    final drawer = await repo.createLocation(
+      name: 'Drawer 2',
+      parentId: office.id,
+      now: at,
     );
     await repo.upsert(
-      itemFixture(id: 'b', name: 'Stapler', room: 'Office'),
+      itemFixture(id: 'a', name: 'Cable', locationId: drawer.id),
     );
+    await repo.upsert(
+      itemFixture(id: 'b', name: 'Stapler', locationId: office.id),
+    );
+    await repo.upsert(itemFixture(id: 'c', name: 'Flour'));
     await pumpShell(tester);
 
     await tester.tap(find.text('Locations'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Office'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Loose in the room'));
+    await tester.tap(
+      find.widgetWithIcon(IconButton, Icons.arrow_forward).first,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Stapler'), findsOneWidget);
-    expect(find.text('Cable'), findsNothing);
+    expect(find.text('Cable'), findsOneWidget);
+    expect(find.text('Flour'), findsNothing);
   });
 }

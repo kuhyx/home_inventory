@@ -545,10 +545,19 @@ void main() {
       );
     });
 
-    test('applies the filter', () {
+    test('applies the filter', () async {
+      // Fold the seeded legacy strings into places first, then filter by the
+      // resulting id — the path the real app takes.
+      await repo.runLocationMigration(now: DateTime.utc(2026, 8, 5));
+      final kitchen = repo.listLocations().firstWhere(
+        (l) => l.name == 'Kitchen',
+      );
+
       expect(
         repo
-            .listItems(filter: const ItemFilter(rooms: {'Kitchen'}))
+            .listItems(
+              filter: ItemFilter(locationIds: repo.subtreeIds(kitchen.id)),
+            )
             .map((i) => i.id),
         ['b', 'c'],
       );
@@ -645,32 +654,16 @@ void main() {
       expect(repo.knownUnits(), ['kg']);
     });
 
-    test('builds the room tree with counts, busiest first', () {
-      final tree = repo.locationTree();
+    // The tree itself is covered in item_repository_locations_test.dart;
+    // what matters here is that the seeded legacy strings became real places
+    // on open, which is the path every existing install takes exactly once.
+    test('the seeded legacy rooms have been folded into places', () async {
+      await repo.runLocationMigration(now: DateTime.utc(2026, 8, 5));
 
-      expect(tree.map((n) => n.room), ['Kitchen', 'Shed']);
-      expect(tree.first.itemCount, 2);
-      expect(tree.first.containers.single.name, 'Drawer');
-      expect(tree.first.containers.single.itemCount, 2);
-    });
-
-    test('orders containers by count then name', () async {
-      await repo.upsert(
-        itemFixture(id: 'f', room: 'Kitchen', container: 'Ainsley'),
+      expect(
+        repo.locationTree().map((n) => n.name).toSet(),
+        containsAll(<String>['Kitchen', 'Shed']),
       );
-
-      final kitchen = repo.locationTree().first;
-      expect(kitchen.containers.map((c) => c.name), ['Drawer', 'Ainsley']);
-    });
-
-    test('breaks a room tie alphabetically', () async {
-      await repo.upsert(itemFixture(id: 'g', room: 'Attic'));
-
-      expect(repo.locationTree().map((n) => n.room), [
-        'Kitchen',
-        'Attic',
-        'Shed',
-      ]);
     });
   });
 
@@ -929,15 +922,15 @@ void main() {
       expect(seen.last, 1);
     });
 
-    test('watchLocationTree re-emits after a move', () async {
-      await repo.upsert(itemFixture(id: 'a', room: 'Office'));
+    test('watchLocationTree re-emits after a place is added', () async {
+      await repo.createLocation(name: 'Office', now: DateTime.utc(2026, 8, 5));
       final seen = <int>[];
       final sub = repo.watchLocationTree().listen(
-        (rooms) => seen.add(rooms.length),
+        (places) => seen.add(places.length),
       );
       await pumpEventQueue();
 
-      await repo.upsert(itemFixture(id: 'b', room: 'Kitchen'));
+      await repo.createLocation(name: 'Kitchen', now: DateTime.utc(2026, 8, 5));
       await pumpEventQueue();
       await sub.cancel();
 

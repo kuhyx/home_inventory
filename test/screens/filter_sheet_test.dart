@@ -9,6 +9,7 @@ import '../support/builders.dart';
 import '../support/pump.dart';
 
 void main() {
+  final at = DateTime.utc(2026, 8, 5);
   late ItemRepository repo;
 
   setUp(() async {
@@ -74,41 +75,6 @@ void main() {
     expect(find.text('Categories'), findsNothing);
   });
 
-  testWidgets('sources its room chips from the inventory', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', room: 'Office'));
-
-    await pumpSheet(tester);
-
-    expect(find.widgetWithText(FilterChip, 'Office'), findsOneWidget);
-  });
-
-  testWidgets('applying pops the edited filter', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', room: 'Office'));
-    final popped = await pumpSheet(tester);
-
-    await tester.tap(find.widgetWithText(FilterChip, 'Office'));
-    await tester.pump();
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
-
-    expect(popped.single, const ItemFilter(rooms: {'Office'}));
-  });
-
-  testWidgets('tapping a selected chip deselects it', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', room: 'Office'));
-    final popped = await pumpSheet(
-      tester,
-      initial: const ItemFilter(rooms: {'Office'}),
-    );
-
-    await tester.tap(find.widgetWithText(FilterChip, 'Office'));
-    await tester.pump();
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
-
-    expect(popped.single, const ItemFilter());
-  });
-
   testWidgets('stock and flag chips are selectable too', (tester) async {
     final popped = await pumpSheet(tester);
 
@@ -128,48 +94,113 @@ void main() {
     );
   });
 
-  testWidgets('containers narrow to the selected rooms', (tester) async {
-    await repo.upsert(
-      itemFixture(id: 'a', room: 'Office', container: 'Drawer 2'),
-    );
-    await repo.upsert(
-      itemFixture(id: 'b', room: 'Kitchen', container: 'Top shelf'),
-    );
+  group('the place facet', () {
+    testWidgets('reads "Anywhere" when nothing is picked', (tester) async {
+      await pumpSheet(tester);
 
-    await pumpSheet(tester, initial: const ItemFilter(rooms: {'Office'}));
+      expect(find.text('Anywhere'), findsOneWidget);
+    });
 
-    expect(find.widgetWithText(FilterChip, 'Drawer 2'), findsOneWidget);
-    expect(find.widgetWithText(FilterChip, 'Top shelf'), findsNothing);
+    // A tree cannot be a chip row: chips could not say which cupboard a shelf
+    // belongs to, and every shelf in the flat side by side is unusable.
+    testWidgets('picking a place selects its whole subtree', (tester) async {
+      final office = await repo.createLocation(name: 'Office', now: at);
+      final drawer = await repo.createLocation(
+        name: 'Drawer 2',
+        parentId: office.id,
+        now: at,
+      );
+      final popped = await pumpSheet(tester);
+
+      await tester.tap(find.text('Anywhere'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Office').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(popped.single!.locationIds, {office.id, drawer.id});
+    });
+
+    testWidgets('shows the chosen place', (tester) async {
+      final office = await repo.createLocation(name: 'Office', now: at);
+      await pumpSheet(
+        tester,
+        initial: ItemFilter(locationIds: {office.id}),
+      );
+
+      expect(find.text('Office'), findsOneWidget);
+    });
+
+    testWidgets('clearing it goes back to anywhere', (tester) async {
+      final office = await repo.createLocation(name: 'Office', now: at);
+      final popped = await pumpSheet(
+        tester,
+        initial: ItemFilter(locationIds: {office.id}),
+      );
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pump();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(popped.single!.locationIds, isEmpty);
+    });
+
+    testWidgets('choosing "Anywhere" in the picker clears it', (tester) async {
+      final office = await repo.createLocation(name: 'Office', now: at);
+      final popped = await pumpSheet(
+        tester,
+        initial: ItemFilter(locationIds: {office.id}),
+      );
+
+      await tester.tap(find.text('Office'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Anywhere').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(popped.single!.locationIds, isEmpty);
+    });
+
+    testWidgets('dismissing the picker changes nothing', (tester) async {
+      await repo.createLocation(name: 'Office', now: at);
+      final popped = await pumpSheet(tester);
+
+      await tester.tap(find.text('Anywhere'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(popped.single!.locationIds, isEmpty);
+    });
+
+    testWidgets('says so when there are no places yet', (tester) async {
+      await pumpSheet(tester);
+
+      await tester.tap(find.text('Anywhere'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('No places yet'), findsOneWidget);
+    });
   });
 
-  testWidgets('every container is offered while no room is picked', (
-    tester,
-  ) async {
-    await repo.upsert(
-      itemFixture(id: 'a', room: 'Office', container: 'Drawer 2'),
-    );
-    await repo.upsert(
-      itemFixture(id: 'b', room: 'Kitchen', container: 'Top shelf'),
+  testWidgets('tapping a selected chip deselects it', (tester) async {
+    await repo.upsert(itemFixture(id: 'a', category: 'Tools'));
+    final popped = await pumpSheet(
+      tester,
+      initial: const ItemFilter(categories: {'Tools'}),
     );
 
-    await pumpSheet(tester);
-
-    expect(find.widgetWithText(FilterChip, 'Drawer 2'), findsOneWidget);
-    expect(find.widgetWithText(FilterChip, 'Top shelf'), findsOneWidget);
-  });
-
-  testWidgets('a container chip is selectable', (tester) async {
-    await repo.upsert(
-      itemFixture(id: 'a', room: 'Office', container: 'Drawer 2'),
-    );
-    final popped = await pumpSheet(tester);
-
-    await tester.tap(find.widgetWithText(FilterChip, 'Drawer 2'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
     await tester.pump();
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
 
-    expect(popped.single, const ItemFilter(containers: {'Drawer 2'}));
+    expect(popped.single, const ItemFilter());
   });
 
   testWidgets('a category chip is selectable', (tester) async {
@@ -192,7 +223,7 @@ void main() {
     await repo.upsert(itemFixture(id: 'a', room: 'Office'));
     final popped = await pumpSheet(
       tester,
-      initial: const ItemFilter(query: 'cable', rooms: {'Office'}),
+      initial: const ItemFilter(query: 'cable', locationIds: {'loc1'}),
     );
 
     await tester.tap(find.text('Clear all'));

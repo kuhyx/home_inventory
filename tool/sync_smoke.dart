@@ -128,6 +128,7 @@ Future<void> _applyEdits(List<String> args, ItemRepository repository) async {
         name: seed,
         quantity: 3,
         unit: '',
+        locationId: '',
         room: 'Smoke test',
         container: 'Throwaway',
         category: '',
@@ -215,7 +216,11 @@ Future<void> _setField(
 
 void _report(ItemRepository repository) {
   for (final item in repository.listItems()) {
-    final where = item.location.isEmpty ? 'nowhere recorded' : item.location;
+    final where = item.locationId.isEmpty
+        ? (item.legacyLocation.isEmpty
+              ? 'nowhere recorded'
+              : item.legacyLocation)
+        : repository.pathLabel(item.locationId);
     stdout.writeln(
       '  ${item.id}  ${item.name}  '
       '×${formatQuantity(item.quantity)}  ($where)',

@@ -46,8 +46,7 @@ class ItemFilter {
   /// Creates a filter; every facet defaults to unrestricted.
   const ItemFilter({
     this.query = '',
-    this.rooms = const {},
-    this.containers = const {},
+    this.locationIds = const {},
     this.categories = const {},
     this.stock = const {},
     this.flags = const {},
@@ -56,11 +55,15 @@ class ItemFilter {
   /// Case-insensitive substring matched against name, notes and category.
   final String query;
 
-  /// Rooms to include; empty means any.
-  final Set<String> rooms;
-
-  /// Containers to include; empty means any.
-  final Set<String> containers;
+  /// Place ids to include; empty means any.
+  ///
+  /// Matched by **exact id**, so a caller wanting "the hallway and
+  /// everything in it" must expand the selection itself with
+  /// `ItemRepository.subtreeIds`. Deliberate: resolving a subtree needs the
+  /// location records, and a filter that reached for them could no longer
+  /// be a value object with a working `==` — which `ItemsScreen` relies on
+  /// to tell a new filter from the one it is already showing.
+  final Set<String> locationIds;
 
   /// Categories to include; empty means any.
   final Set<String> categories;
@@ -75,8 +78,7 @@ class ItemFilter {
   /// Whether this filter restricts nothing.
   bool get isEmpty =>
       query.trim().isEmpty &&
-      rooms.isEmpty &&
-      containers.isEmpty &&
+      locationIds.isEmpty &&
       categories.isEmpty &&
       stock.isEmpty &&
       flags.isEmpty;
@@ -88,8 +90,7 @@ class ItemFilter {
   int get activeCount {
     var count = 0;
     if (query.trim().isNotEmpty) count++;
-    if (rooms.isNotEmpty) count++;
-    if (containers.isNotEmpty) count++;
+    if (locationIds.isNotEmpty) count++;
     if (categories.isNotEmpty) count++;
     if (stock.isNotEmpty) count++;
     if (flags.isNotEmpty) count++;
@@ -103,8 +104,7 @@ class ItemFilter {
   /// are just filters).
   bool matches(Item item) {
     if (!_matchesQuery(item)) return false;
-    if (rooms.isNotEmpty && !_containsFold(rooms, item.room)) return false;
-    if (containers.isNotEmpty && !_containsFold(containers, item.container)) {
+    if (locationIds.isNotEmpty && !locationIds.contains(item.locationId)) {
       return false;
     }
     if (categories.isNotEmpty && !_containsFold(categories, item.category)) {
@@ -138,8 +138,7 @@ class ItemFilter {
   bool operator ==(Object other) =>
       other is ItemFilter &&
       other.query == query &&
-      _sameSet(other.rooms, rooms) &&
-      _sameSet(other.containers, containers) &&
+      _sameSet(other.locationIds, locationIds) &&
       _sameSet(other.categories, categories) &&
       _sameSet(other.stock, stock) &&
       _sameSet(other.flags, flags);
@@ -149,8 +148,7 @@ class ItemFilter {
     query,
     // Sets are unordered, so their own hashCode is identity-based and would
     // make two equal filters hash differently. Fold instead, commutatively.
-    _setHash(rooms),
-    _setHash(containers),
+    _setHash(locationIds),
     _setHash(categories),
     _setHash(stock),
     _setHash(flags),
@@ -166,15 +164,13 @@ class ItemFilter {
   /// unchanged. Pass an empty set to clear one.
   ItemFilter copyWith({
     String? query,
-    Set<String>? rooms,
-    Set<String>? containers,
+    Set<String>? locationIds,
     Set<String>? categories,
     Set<StockState>? stock,
     Set<ItemFlag>? flags,
   }) => ItemFilter(
     query: query ?? this.query,
-    rooms: rooms ?? this.rooms,
-    containers: containers ?? this.containers,
+    locationIds: locationIds ?? this.locationIds,
     categories: categories ?? this.categories,
     stock: stock ?? this.stock,
     flags: flags ?? this.flags,

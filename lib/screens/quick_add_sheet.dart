@@ -77,6 +77,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
         name: _name.text.trim(),
         quantity: quantity,
         unit: '',
+        locationId: '',
         room: _room.text.trim(),
         container: _container.text.trim(),
         category: '',

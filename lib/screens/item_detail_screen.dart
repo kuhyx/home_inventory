@@ -78,6 +78,12 @@ class _DetailBody extends StatelessWidget {
     final theme = Theme.of(context);
     final hint = repository.rateHint(item.id, now: clock());
     final history = repository.historyFor(item.id).reversed.toList();
+    // Resolved here rather than on the model: walking an arbitrarily deep
+    // parent chain needs the other records. Falls back to the legacy strings
+    // for an item that has not been migrated yet.
+    final place = item.locationId.isEmpty
+        ? item.legacyLocation
+        : repository.pathLabel(item.locationId);
     return Scaffold(
       appBar: AppBar(
         title: Text(item.name),
@@ -122,10 +128,10 @@ class _DetailBody extends StatelessWidget {
             ),
           ],
           const Divider(),
-          if (item.location.isNotEmpty)
+          if (place.isNotEmpty)
             ListTile(
               leading: const Icon(Icons.place_outlined),
-              title: Text(item.location),
+              title: Text(place),
             ),
           if (item.category.isNotEmpty)
             ListTile(

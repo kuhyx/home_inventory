@@ -16,8 +16,7 @@ void main() {
 
     test('any populated facet makes it non-empty', () {
       expect(const ItemFilter(query: 'a').isEmpty, isFalse);
-      expect(const ItemFilter(rooms: {'Kitchen'}).isEmpty, isFalse);
-      expect(const ItemFilter(containers: {'Box'}).isEmpty, isFalse);
+      expect(const ItemFilter(locationIds: {'loc1'}).isEmpty, isFalse);
       expect(const ItemFilter(categories: {'Food'}).isEmpty, isFalse);
       expect(
         const ItemFilter(stock: {StockState.low}).isEmpty,
@@ -38,7 +37,7 @@ void main() {
     // Counts facets, not selections: three rooms is one restriction as far
     // as the user is concerned, so the badge should read 1.
     test('counts facets rather than selections', () {
-      const filter = ItemFilter(rooms: {'Kitchen', 'Shed', 'Loft'});
+      const filter = ItemFilter(locationIds: {'a', 'b', 'c'});
 
       expect(filter.activeCount, 1);
     });
@@ -46,14 +45,14 @@ void main() {
     test('counts every facet in use', () {
       const filter = ItemFilter(
         query: 'cable',
-        rooms: {'Kitchen'},
-        containers: {'Box'},
+        locationIds: {'loc1'},
         categories: {'Cables'},
         stock: {StockState.low},
         flags: {ItemFlag.wanted},
       );
 
-      expect(filter.activeCount, 6);
+      // Five, not six: rooms and containers became one place facet.
+      expect(filter.activeCount, 5);
     });
 
     test('ignores a whitespace-only query', () {
@@ -101,33 +100,38 @@ void main() {
 
     // Free text means "Cables" and "cables" can both exist; a chip for one
     // must pick up the other, or the list silently hides items.
-    test('room, container and category all fold case', () {
-      final item = itemFixture(
-        room: 'Kitchen',
-        container: 'Top Drawer',
-        category: 'Cables',
-      );
+    test('category folds case', () {
+      final item = itemFixture(category: 'Cables');
 
-      expect(const ItemFilter(rooms: {'kitchen'}).matches(item), isTrue);
-      expect(
-        const ItemFilter(containers: {'top drawer'}).matches(item),
-        isTrue,
-      );
       expect(
         const ItemFilter(categories: {'cables'}).matches(item),
         isTrue,
       );
     });
 
-    test('rejects an item outside each facet', () {
-      final item = itemFixture(
-        room: 'Kitchen',
-        container: 'Top Drawer',
-        category: 'Cables',
-      );
+    // Places match by exact id, deliberately unlike the free-text facets: an
+    // id is not something the user typed, and the caller has already expanded
+    // the selection to a whole subtree.
+    test('a place matches by exact id', () {
+      final item = itemFixture(locationId: 'loc1');
 
-      expect(const ItemFilter(rooms: {'Shed'}).matches(item), isFalse);
-      expect(const ItemFilter(containers: {'Crate'}).matches(item), isFalse);
+      expect(const ItemFilter(locationIds: {'loc1'}).matches(item), isTrue);
+      expect(const ItemFilter(locationIds: {'LOC1'}).matches(item), isFalse);
+    });
+
+    test('a subtree selection matches anything filed in it', () {
+      final onShelf = itemFixture(id: 'i1', locationId: 'shelf');
+      final elsewhere = itemFixture(id: 'i2', locationId: 'kitchen');
+      const filter = ItemFilter(locationIds: {'hall', 'shelf'});
+
+      expect(filter.matches(onShelf), isTrue);
+      expect(filter.matches(elsewhere), isFalse);
+    });
+
+    test('rejects an item outside each facet', () {
+      final item = itemFixture(locationId: 'loc1', category: 'Cables');
+
+      expect(const ItemFilter(locationIds: {'other'}).matches(item), isFalse);
       expect(const ItemFilter(categories: {'Food'}).matches(item), isFalse);
     });
   });
@@ -176,18 +180,18 @@ void main() {
 
   group('copyWith', () {
     test('null leaves a facet unchanged', () {
-      const base = ItemFilter(query: 'a', rooms: {'Kitchen'});
+      const base = ItemFilter(query: 'a', locationIds: {'loc1'});
 
       final copy = base.copyWith();
 
       expect(copy.query, 'a');
-      expect(copy.rooms, {'Kitchen'});
+      expect(copy.locationIds, {'loc1'});
     });
 
     test('an empty set clears a facet', () {
-      const base = ItemFilter(rooms: {'Kitchen'});
+      const base = ItemFilter(locationIds: {'loc1'});
 
-      expect(base.copyWith(rooms: {}).rooms, isEmpty);
+      expect(base.copyWith(locationIds: {}).locationIds, isEmpty);
     });
 
     test('replaces every facet', () {
@@ -195,16 +199,14 @@ void main() {
 
       final copy = base.copyWith(
         query: 'q',
-        rooms: {'r'},
-        containers: {'c'},
+        locationIds: {'r'},
         categories: {'cat'},
         stock: {StockState.out},
         flags: {ItemFlag.sellable},
       );
 
       expect(copy.query, 'q');
-      expect(copy.rooms, {'r'});
-      expect(copy.containers, {'c'});
+      expect(copy.locationIds, {'r'});
       expect(copy.categories, {'cat'});
       expect(copy.stock, {StockState.out});
       expect(copy.flags, {ItemFlag.sellable});
@@ -213,8 +215,8 @@ void main() {
 
   group('value equality', () {
     test('two filters with equal facets are equal', () {
-      const a = ItemFilter(query: 'q', rooms: {'Office', 'Kitchen'});
-      const b = ItemFilter(query: 'q', rooms: {'Kitchen', 'Office'});
+      const a = ItemFilter(query: 'q', locationIds: {'b', 'a'});
+      const b = ItemFilter(query: 'q', locationIds: {'a', 'b'});
 
       expect(a, b);
       // Sets are unordered, so their own hashCode is identity-based: without
@@ -224,15 +226,15 @@ void main() {
     });
 
     test('a differing facet breaks equality', () {
-      const a = ItemFilter(rooms: {'Office'});
-      const b = ItemFilter(rooms: {'Kitchen'});
+      const a = ItemFilter(locationIds: {'a'});
+      const b = ItemFilter(locationIds: {'b'});
 
       expect(a, isNot(b));
     });
 
     test('a facet of a different size breaks equality', () {
-      const a = ItemFilter(rooms: {'Office'});
-      const b = ItemFilter(rooms: {'Office', 'Kitchen'});
+      const a = ItemFilter(locationIds: {'a'});
+      const b = ItemFilter(locationIds: {'a', 'b'});
 
       expect(a, isNot(b));
     });
@@ -241,8 +243,7 @@ void main() {
       const base = ItemFilter();
 
       expect(base, isNot(const ItemFilter(query: 'q')));
-      expect(base, isNot(const ItemFilter(rooms: {'r'})));
-      expect(base, isNot(const ItemFilter(containers: {'c'})));
+      expect(base, isNot(const ItemFilter(locationIds: {'r'})));
       expect(base, isNot(const ItemFilter(categories: {'cat'})));
       expect(base, isNot(const ItemFilter(stock: {StockState.out})));
       expect(base, isNot(const ItemFilter(flags: {ItemFlag.wanted})));

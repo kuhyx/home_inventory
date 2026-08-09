@@ -35,15 +35,14 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   ItemFilter? _requestedFilter;
 
-  /// Shows one room, or one container within it, on the items tab.
-  void _showLocation(String room, String? container) {
+  /// Shows one place, and everything inside it, on the items tab.
+  void _showLocation(String locationId) {
     setState(() {
-      // An empty room or container name is a real value here ("no room given"),
-      // not a missing one — the filter folds case and matches '' exactly, so
-      // "Loose in the room" narrows correctly instead of clearing the facet.
+      // Expanded to the whole subtree here, because the filter matches ids
+      // exactly: asking for "the hallway" and getting only the things loose in
+      // it, while everything on its shelves stays hidden, would read as a bug.
       _requestedFilter = ItemFilter(
-        rooms: {room},
-        containers: container == null ? const {} : {container},
+        locationIds: widget.repository.subtreeIds(locationId),
       );
       _index = 0;
     });

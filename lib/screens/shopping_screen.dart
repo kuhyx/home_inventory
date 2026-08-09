@@ -145,6 +145,7 @@ class _ItemList extends StatelessWidget {
           final item = items[index];
           final tile = ItemTile(
             item: item,
+            locationLabel: repository.locationLabelFor(item),
             onTap: () => _open(context, item),
           );
           if (!showRestock) return tile;

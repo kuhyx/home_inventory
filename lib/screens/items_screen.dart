@@ -236,6 +236,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     itemCount: items.length,
                     itemBuilder: (context, index) => ItemTile(
                       item: items[index],
+                      locationLabel: widget.repository.locationLabelFor(
+                        items[index],
+                      ),
                       onTap: () => _open(items[index]),
                     ),
                   );
