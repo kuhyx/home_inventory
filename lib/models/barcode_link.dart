@@ -1,6 +1,8 @@
 /// The mapping from a scanned code to an item, and how much one scan means.
 library;
 
+import 'package:home_inventory/data/derived_ids.dart';
+
 /// One barcode, pointing at one item, worth a fixed amount.
 ///
 /// The amount is the whole reason this is a record rather than a string field
@@ -36,11 +38,16 @@ class BarcodeLink {
 
   /// The CRDT record id for [code].
   ///
-  /// **Derived from the code, not a uuid.** Two devices that scan the same
+  /// **Derived from the code, not minted.** Two devices that scan the same
   /// unknown bag and link it to the same item must converge on one mapping;
   /// with random ids they would each keep their own, and a lookup would have
   /// to pick between two records that both claim the code.
-  static String recordId(String code) => 'barcode-$code';
+  ///
+  /// A uuid v5 rather than a `barcode-$code` prefix, so the record id stays an
+  /// opaque key: `record_types.dart` keeps the kind in a field precisely so
+  /// that recognising a kind is an equality check and never string parsing.
+  /// Pass a code already folded by [normalizeBarcode].
+  static String recordId(String code) => derivedBarcodeId(code);
 
   /// Folds the variants of one physical code onto a single string.
   ///

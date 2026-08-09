@@ -72,4 +72,37 @@ void main() {
       );
     });
   });
+
+  group('derivedBarcodeId', () {
+    test('the same code always gives the same id', () {
+      expect(
+        derivedBarcodeId('5900512300153'),
+        derivedBarcodeId('5900512300153'),
+      );
+    });
+
+    test('different codes give different ids', () {
+      expect(
+        derivedBarcodeId('5900512300153'),
+        isNot(derivedBarcodeId('5900512300154')),
+      );
+    });
+
+    // Every kind shares one namespace, so a code and a place that happen to
+    // read the same must still be two records.
+    test('does not collide with a location or a type of the same name', () {
+      expect(derivedBarcodeId('590'), isNot(derivedLocationId(null, '590')));
+      expect(derivedBarcodeId('590'), isNot(derivedItemTypeId('590')));
+    });
+
+    // Pinned for the same reason as the location golden above: these ids are
+    // already in users' logs, and a namespace or prefix change would quietly
+    // orphan every barcode anyone has linked.
+    test('is stable against a pinned literal', () {
+      expect(
+        derivedBarcodeId('5900512300153'),
+        '74bb0f3e-7845-5ae8-a0a0-3316492c3d1c',
+      );
+    });
+  });
 }

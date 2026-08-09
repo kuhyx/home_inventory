@@ -47,3 +47,16 @@ String derivedLocationId(String? parentId, String name) => const Uuid().v5(
 /// rather than by a guard.
 String derivedItemTypeId(String slug) =>
     const Uuid().v5(kInventoryNamespace, 'type:${foldKey(slug)}');
+
+/// The id of the barcode mapping for [code].
+///
+/// Same reasoning again: two devices that scan the same unknown bag and link
+/// it to the same item must converge on one mapping, or a lookup has to choose
+/// between two records that both claim the code.
+///
+/// [code] is expected to be already folded by `BarcodeLink.normalizeBarcode`,
+/// which is a different fold from [foldKey] — it turns a UPC-A into the
+/// EAN-13 that means the same tin, and case has no meaning in a GTIN. Passing
+/// a raw scan here would file the two forms of one code under two ids.
+String derivedBarcodeId(String code) =>
+    const Uuid().v5(kInventoryNamespace, 'barcode:$code');
