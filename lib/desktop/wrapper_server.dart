@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crdt_sync/crdt_sync.dart';
 import 'package:path/path.dart' as p;
 
 /// Local HTTP server backing the desktop app.
@@ -22,7 +23,31 @@ import 'package:path/path.dart' as p;
 /// routable address would let anything on the network rewrite the inventory.
 class WrapperServer {
   /// Creates a server serving [webRoot] and persisting to [logPath].
-  WrapperServer({required this.webRoot, required this.logPath});
+  ///
+  /// [serveSyncAccount] and [syncConfigDir] are injected so tests can drive
+  /// the provisioning route without mutating the process environment; in
+  /// production both come from the environment and the user's home.
+  WrapperServer({
+    required this.webRoot,
+    required this.logPath,
+    bool? serveSyncAccount,
+    String? syncConfigDir,
+  }) : serveSyncAccount =
+           serveSyncAccount ??
+           (Platform.environment[kSyncAccountEnvVar] ?? '').isNotEmpty,
+       syncConfigDir =
+           syncConfigDir ??
+           p.join(
+             Platform.environment['HOME'] ?? '',
+             '.config',
+             'crdt-sync',
+           );
+
+  /// Whether the sync-account route answers; off unless explicitly enabled.
+  final bool serveSyncAccount;
+
+  /// Directory holding `firebase.json` and `password`.
+  final String syncConfigDir;
 
   /// Directory holding the built Flutter web assets.
   final String webRoot;
@@ -66,7 +91,51 @@ class WrapperServer {
     if (request.uri.path == '/backup/log') {
       return _file(request, logPath);
     }
+    if (request.uri.path == kSyncAccountPath) {
+      return _syncAccount(request);
+    }
     return _static(request, request.uri.path);
+  }
+
+  /// Serves the shared sync account so a desktop install can self-provision.
+  ///
+  /// Off unless CRDT_SYNC_SERVE_ACCOUNT is set: this hands out a credential
+  /// with database write access to anything that can reach the port, so it is
+  /// switched on once to set an install up, not left running. 404 (rather
+  /// than 403) when disabled, so a probe cannot tell the route exists.
+  ///
+  /// Reads the same ~/.config/crdt-sync/ pair every other app on this machine
+  /// uses, so there is one source of truth rather than a per-app copy.
+  Future<void> _syncAccount(HttpRequest request) async {
+    if (!serveSyncAccount) {
+      request.response.statusCode = HttpStatus.notFound;
+      return;
+    }
+    final configFile = File(p.join(syncConfigDir, 'firebase.json'));
+    final passwordFile = File(p.join(syncConfigDir, 'password'));
+    if (!configFile.existsSync() || !passwordFile.existsSync()) {
+      stderr.writeln(
+        'Sync account requested but ~/.config/crdt-sync/ is incomplete — '
+        'the desktop app will keep asking for credentials.',
+      );
+      request.response.statusCode = HttpStatus.notFound;
+      return;
+    }
+    final email =
+        (jsonDecode(await configFile.readAsString())
+            as Map<String, dynamic>)['email'];
+    if (email is! String || email.isEmpty) {
+      stderr.writeln('firebase.json has no usable "email" — not serving it.');
+      request.response.statusCode = HttpStatus.notFound;
+      return;
+    }
+    request.response.headers.contentType = ContentType.json;
+    request.response.write(
+      jsonEncode({
+        'email': email,
+        'password': (await passwordFile.readAsString()).trim(),
+      }),
+    );
   }
 
   /// GET returns the file's contents (404 when absent); POST overwrites it.
