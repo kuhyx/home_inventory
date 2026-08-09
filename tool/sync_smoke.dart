@@ -59,6 +59,27 @@ Future<void> main(List<String> args) async {
   final repo = Platform.environment['SYNC_REPO'] ?? 'syncs';
 
   final peerDir = _value(args, '--dir');
+  // A --dir run pushes under a *stable* id, so unlike a bare run it lands in
+  // a real device slot that persists. Pointed at the live repo that means
+  // permanent test data in production: a `--dir peer-pc` run once wrote
+  // HLC stamps signed `peer-peer-pc` into the real inventory-sync namespace,
+  // where they are indistinguishable from a genuine device's. Require an
+  // explicit opt-in rather than trusting whoever runs this to remember.
+  if (peerDir != null &&
+      owner == 'kuhyx' &&
+      repo == 'syncs' &&
+      Platform.environment['SYNC_SMOKE_ALLOW_LIVE'] != '1') {
+    stderr.writeln(
+      'Refusing to run a --dir smoke test against the live $owner/$repo.\n'
+      'A stable peer id writes a permanent device slot there. Either:\n'
+      '  - point it elsewhere: SYNC_OWNER=<you> SYNC_REPO=<scratch-repo>\n'
+      '  - drop --dir, which uses a throwaway id and directory, or\n'
+      '  - if you really mean it: SYNC_SMOKE_ALLOW_LIVE=1 (then clean up\n'
+      '    afterwards with --forget <id>).',
+    );
+    exitCode = 2;
+    return;
+  }
   // Without --dir: a throwaway node id and a throwaway directory, so a bare
   // run can never write into a real device's slot and clobber that device's
   // file. With --dir: a stable id, because a peer that forgets who it is
