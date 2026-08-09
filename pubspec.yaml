@@ -4,7 +4,13 @@ description: >-
   running low, and what you need to buy or can sell. CRDT-synced between
   phone and desktop through a private GitHub repo used as dumb storage.
 publish_to: 'none'
-version: 0.1.0+1
+# The build number is deliberately far above CI's counter. CI overrides it with
+# `--build-number=${{ github.run_number }}` on every release build, so this
+# value only ever reaches a LOCAL build — and a local build has to out-rank the
+# CI-built APK already on the phone or `adb install -r` refuses it as a
+# downgrade. Left at +1 it always loses, which makes local install-over
+# impossible rather than merely awkward. Raise it, never lower it.
+version: 0.1.0+9000
 
 environment:
   sdk: ^3.12.2
