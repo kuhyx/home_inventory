@@ -10,7 +10,7 @@ publish_to: 'none'
 # CI-built APK already on the phone or `adb install -r` refuses it as a
 # downgrade. Left at +1 it always loses, which makes local install-over
 # impossible rather than merely awkward. Raise it, never lower it.
-version: 0.1.0+9000
+version: 0.1.0+61
 
 environment:
   sdk: ^3.12.2
@@ -22,7 +22,7 @@ dependencies:
   crdt_sync:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_dart-v0.8.0
+      ref: crdt_sync_dart-v0.10.0
       path: crdt_sync_dart
 
   cupertino_icons: ^1.0.8
@@ -30,6 +30,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_secure_storage: ^10.3.1
+
+  # One-tap sign-in for the sync account. App-side only: crdt_sync stays pure
+  # Dart so it keeps working on Linux desktop and headless.
+  google_sign_in: ^7.2.0
   http: ^1.6.0
   idb_shim: ^2.9.6+2
   # For @immutable on the pure-Dart models. Deliberately not

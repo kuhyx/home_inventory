@@ -73,9 +73,12 @@ void main() {
     WidgetTester tester,
     http.Client client, {
     Future<FirebaseRestClient?> Function()? firebaseFactory,
+    Future<FirebaseRestClient?> Function()? googleFirebaseFactory,
+    bool? googleAvailable,
     Future<FirebaseAccount?> Function()? accountLoader,
     Future<void> Function(FirebaseAccount)? accountSaver,
     Future<void> Function()? accountClearer,
+    Future<bool> Function()? sessionProbe,
   }) async {
     tester.view.physicalSize = const Size(1000, 2400);
     tester.view.devicePixelRatio = 1;
@@ -90,9 +93,19 @@ void main() {
         // real factories want an application-support directory and the OS
         // keystore, neither of which exists under `flutter test`.
         firebaseFactory: firebaseFactory ?? () async => null,
+        googleFirebaseFactory: googleFirebaseFactory,
+        googleAvailable: googleAvailable,
         accountLoader: accountLoader ?? () async => null,
         accountSaver: accountSaver,
         accountClearer: accountClearer,
+        // Defaults to whatever the injected account says, so a test that only
+        // stubs the account still describes one coherent device. The
+        // production probe consults the keystore, which these tests do not
+        // provide, and would otherwise answer "no session" for a device the
+        // test just declared signed in.
+        sessionProbe:
+            sessionProbe ??
+            () async => await (accountLoader ?? () async => null)() != null,
         stateStore: InMemorySyncStateStore(),
       ),
     );
@@ -157,6 +170,105 @@ void main() {
     expect(find.text('Connected to Firebase.'), findsOneWidget);
     expect(find.text('sync@example.com'), findsOneWidget);
     expect(find.text('Disconnect'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Sign in with Google connects and reads back the persisted account',
+    (tester) async {
+      var sessionStored = false;
+      await pumpSettings(
+        tester,
+        GitHubFake().client,
+        googleAvailable: true,
+        googleFirebaseFactory: () async {
+          sessionStored = true;
+          return _stubFirebaseClient();
+        },
+        accountLoader: () async => sessionStored
+            ? const FirebaseAccount(email: 'g@example.com', password: '')
+            : null,
+      );
+
+      expect(find.text('Sign in with Google'), findsOneWidget);
+      await tester.tap(find.text('Sign in with Google'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Connected to Firebase.'), findsOneWidget);
+      expect(find.text('g@example.com'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Sign in with Google reports a cancelled picker as pending, not an '
+    'error',
+    (tester) async {
+      await pumpSettings(
+        tester,
+        GitHubFake().client,
+        googleAvailable: true,
+        googleFirebaseFactory: () async => null,
+      );
+
+      await tester.tap(find.text('Sign in with Google'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Google sign-in was cancelled.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Sign in with Google that does not persist a session reports the retry '
+    'message',
+    (tester) async {
+      await pumpSettings(
+        tester,
+        GitHubFake().client,
+        googleAvailable: true,
+        googleFirebaseFactory: () async => _stubFirebaseClient(),
+        sessionProbe: () async => false,
+      );
+
+      await tester.tap(find.text('Sign in with Google'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('did not save the session'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('Sign in with Google wrong-account error surfaces the message', (
+    tester,
+  ) async {
+    await pumpSettings(
+      tester,
+      GitHubFake().client,
+      googleAvailable: true,
+      googleFirebaseFactory: () async => throw FirebaseAuthError('wrong uid'),
+    );
+
+    await tester.tap(find.text('Sign in with Google'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('wrong uid'), findsOneWidget);
+  });
+
+  testWidgets('Sign in with Google generic failure surfaces the error text', (
+    tester,
+  ) async {
+    await pumpSettings(
+      tester,
+      GitHubFake().client,
+      googleAvailable: true,
+      googleFirebaseFactory: () async => throw StateError('boom'),
+    );
+
+    await tester.tap(find.text('Sign in with Google'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Google sign-in failed'), findsOneWidget);
   });
 
   testWidgets('a rejected account is cleared rather than left half-stored', (
