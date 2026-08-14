@@ -13,14 +13,15 @@ enforced by a gate that fails the commit, not by a note anyone can ignore.
 Why: a file that cannot be read in one piece forces re-reads and partial edits,
 which is the single largest avoidable cost in an LLM-assisted workflow. Aim by
 churn, not size alone — refactoring pays where code is read and changed often
-(Fowler, *refactoring economic benefit*).
+(Fowler, _refactoring economic benefit_).
 
 ## Scope in this repo
 
-- **17 files** currently exceed 250 lines (of 114 eligible files).
+- **17 files** currently exceed 250 lines (of 115 eligible files).
 - **7,752 lines** sit in violation; longest file is **1325 lines**.
 
 Exempt (do NOT split these):
+
 - generated files — `*.g.dart`, `*.freezed.dart`, `*.gr.dart`, `**/l10n/generated/**`,
   anything with a `GENERATED` header
 - markup — `.html`, `.css`, `.scss`
@@ -32,23 +33,23 @@ Exempt (do NOT split these):
 ROI = lines x commits in the last year. Work top-down; a long file nobody edits
 has near-zero payoff and should not be first.
 
-| lines | commits/yr | kind | file |
-|------:|-----------:|:-----|:-----|
-| 1325 | 6 | code | `test/data/item_repository_test.dart` |
-| 1120 | 7 | code | `lib/data/item_repository.dart` |
-| 336 | 7 | code | `lib/screens/items_screen.dart` |
-| 378 | 6 | code | `test/screens/items_screen_test.dart` |
-| 290 | 6 | code | `tool/sync_smoke.dart` |
-| 328 | 4 | code | `test/models/item_filter_test.dart` |
-| 343 | 3 | code | `lib/screens/filter_sheet.dart` |
-| 308 | 3 | code | `lib/screens/item_form_screen.dart` |
-| 284 | 3 | code | `test/screens/filter_sheet_test.dart` |
-| 264 | 3 | code | `test/screens/item_detail_screen_test.dart` |
-| 380 | 2 | code | `test/screens/locations_screen_test.dart` |
-| 376 | 2 | code | `test/screens/item_form_screen_test.dart` |
-| 349 | 2 | code | `test/ui/widgets_test.dart` |
-| 326 | 2 | code | `lib/screens/locations_screen.dart` |
-| 624 | 1 | code | `test/data/item_repository_locations_test.dart` |
+| lines | commits/yr | kind | file                                            |
+| ----: | ---------: | :--- | :---------------------------------------------- |
+|  1325 |          6 | code | `test/data/item_repository_test.dart`           |
+|  1120 |          7 | code | `lib/data/item_repository.dart`                 |
+|   336 |          7 | code | `lib/screens/items_screen.dart`                 |
+|   378 |          6 | code | `test/screens/items_screen_test.dart`           |
+|   290 |          6 | code | `tool/sync_smoke.dart`                          |
+|   328 |          4 | code | `test/models/item_filter_test.dart`             |
+|   343 |          3 | code | `lib/screens/filter_sheet.dart`                 |
+|   308 |          3 | code | `lib/screens/item_form_screen.dart`             |
+|   284 |          3 | code | `test/screens/filter_sheet_test.dart`           |
+|   264 |          3 | code | `test/screens/item_detail_screen_test.dart`     |
+|   380 |          2 | code | `test/screens/locations_screen_test.dart`       |
+|   376 |          2 | code | `test/screens/item_form_screen_test.dart`       |
+|   349 |          2 | code | `test/ui/widgets_test.dart`                     |
+|   326 |          2 | code | `lib/screens/locations_screen.dart`             |
+|   624 |          1 | code | `test/data/item_repository_locations_test.dart` |
 
 _(2 further files over 250 lines not listed — re-run the survey for the full set.)_
 
