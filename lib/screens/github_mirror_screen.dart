@@ -13,9 +13,9 @@ import 'dart:async';
 
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:flutter/material.dart';
+import 'package:github_device_auth/github_device_auth.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/sync/firebase_backend.dart';
-import 'package:home_inventory/sync/github_device_auth.dart';
 import 'package:home_inventory/sync/sync_service.dart';
 import 'package:home_inventory/sync/sync_settings.dart';
 import 'package:home_inventory/sync/sync_state_factory.dart';
