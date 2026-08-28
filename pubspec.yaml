@@ -22,34 +22,34 @@ dependencies:
   crdt_sync:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_dart-v0.10.0
+      ref: crdt_sync_dart-v0.11.1
       path: crdt_sync_dart
 
-  cupertino_icons: ^1.0.8
-  file_selector: ^1.1.0
+  cupertino_icons: 1.0.9
+  file_selector: 1.1.0
   flutter:
     sdk: flutter
-  flutter_secure_storage: ^10.3.1
+  flutter_secure_storage: 11.0.0
 
   github_device_auth:
     git:
       url: https://github.com/kuhyx/utils
-      ref: github_device_auth-v0.3.0
+      ref: github_device_auth-v0.3.1
       path: github_device_auth
   # One-tap sign-in for the sync account. App-side only: crdt_sync stays pure
   # Dart so it keeps working on Linux desktop and headless.
-  google_sign_in: ^7.2.0
-  http: ^1.6.0
-  idb_shim: ^2.9.6+2
+  google_sign_in: 7.2.0
+  http: 1.6.0
+  idb_shim: 2.9.8
   # For @immutable on the pure-Dart models. Deliberately not
   # `package:flutter/foundation.dart`, which exports the same annotation: the
   # models are reachable from `tool/sync_smoke.dart`, which runs under plain
   # `dart run` and cannot load the Flutter SDK.
-  meta: ^1.16.0
-  path: ^1.9.1
-  path_provider: ^2.1.5
-  share_plus: ^13.1.0
-  shared_preferences: ^2.5.5
+  meta: 1.19.0
+  path: 1.9.1
+  path_provider: 2.1.6
+  share_plus: 13.3.0
+  shared_preferences: 2.5.5
   # Shared "Sync settings" screen (Firebase + Backup), identical in shape
   # across every kuhy app that syncs. GitHub mirror stays app-local (see
   # lib/screens/github_mirror_screen.dart) since here it also triggers a real
@@ -57,23 +57,23 @@ dependencies:
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.1.0
+      ref: sync_settings_ui-v0.4.1
       path: sync_settings_ui
-  url_launcher: ^6.3.2
-  uuid: ^4.5.3
+  url_launcher: 6.3.2
+  uuid: 4.6.0
 
 dev_dependencies:
-  fake_async: ^1.3.3
+  fake_async: 1.3.3
   # Platform-interface packages let widget tests fake the picker/launcher
   # instead of reaching a real platform channel — which is what keeps the
   # settings-screen paths genuinely covered rather than `coverage:ignore`d.
-  file_selector_platform_interface: ^2.7.0
-  flutter_launcher_icons: ^0.14.4
+  file_selector_platform_interface: 2.7.0
+  flutter_launcher_icons: 0.14.4
   flutter_test:
     sdk: flutter
-  plugin_platform_interface: ^2.1.8
-  url_launcher_platform_interface: ^2.3.2
-  very_good_analysis: ^10.2.0
+  plugin_platform_interface: 2.1.8
+  url_launcher_platform_interface: 2.3.2
+  very_good_analysis: ^10.3.0
 
 flutter:
   uses-material-design: true
