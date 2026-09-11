@@ -101,14 +101,14 @@ directory here and never will be. Icons under `desktop/icons/` are pre-rendered
 and committed; regenerate with
 
 ```bash
-PYTHONPATH=~/testsAndMisc python3 -m python_pkg.app_icons \
+PYTHONPATH=~/src/testsAndMisc python3 -m python_pkg.app_icons \
     generate --app home_inventory --linux-out desktop/icons
 ```
 
 Deploy to the phone with the shared script — never uninstall, it wipes data:
 
 ```bash
-bash ~/.claude/scripts/phone_deploy.sh ~/home_inventory --release --shot /tmp/shot.png
+bash ~/.claude/scripts/phone_deploy.sh ~/src/home_inventory --release --shot /tmp/shot.png
 ```
 
 ## Places
@@ -147,7 +147,7 @@ there would grow the merge input on every tick.
 
 ## Conventions
 
-- `analysis_options.yaml` is copied verbatim from `~/diet-guard/app`
+- `analysis_options.yaml` is copied verbatim from `~/src/diet-guard/app`
   (`very_good_analysis`); never `flutter_lints`.
 - Design tokens live in `lib/ui/theme.dart`, from the shared
   `unified-design-system`. Never `ColorScheme.fromSeed`, and no raw colour
