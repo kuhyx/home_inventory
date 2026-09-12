@@ -51,9 +51,7 @@ class ItemTile extends StatelessWidget {
       onTap: onTap,
       title: Row(
         children: [
-          Expanded(
-            child: Text(item.name, overflow: TextOverflow.ellipsis),
-          ),
+          Expanded(child: Text(item.name, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: AppSpacing.sm),
           if (freshness != null) ...[
             FreshnessBadge(freshness: freshness),

@@ -83,11 +83,8 @@ class _ItemList extends StatelessWidget {
   Future<void> _open(BuildContext context, Item item) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => ItemDetailScreen(
-          repository: repository,
-          itemId: item.id,
-          now: now,
-        ),
+        builder: (_) =>
+            ItemDetailScreen(repository: repository, itemId: item.id, now: now),
       ),
     );
   }

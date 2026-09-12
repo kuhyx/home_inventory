@@ -98,9 +98,7 @@ void main() {
 
     test('parents come before their children', () {
       final plan = planLocationMigration(
-        [
-          itemFixture(id: 'i1', room: 'B room', container: 'A shelf'),
-        ],
+        [itemFixture(id: 'i1', room: 'B room', container: 'A shelf')],
         const [],
         now,
       );

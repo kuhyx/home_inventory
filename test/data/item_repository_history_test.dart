@@ -166,12 +166,7 @@ void main() {
     });
 
     test('already at or below the threshold', () async {
-      await seedUses(
-        count: 20,
-        spanDays: 40,
-        startQuantity: 5,
-        lowStockAt: 10,
-      );
+      await seedUses(count: 20, spanDays: 40, startQuantity: 5, lowStockAt: 10);
 
       expect(repo.rateHint('i1', now: now), isNull);
     });
@@ -179,12 +174,7 @@ void main() {
     // A trickle against a huge stock projects years out; that is noise, not
     // information.
     test('projection beyond a year', () async {
-      await seedUses(
-        count: 3,
-        spanDays: 80,
-        each: 0.01,
-        startQuantity: 500,
-      );
+      await seedUses(count: 3, spanDays: 80, each: 0.01, startQuantity: 500);
 
       expect(repo.rateHint('i1', now: now), isNull);
     });

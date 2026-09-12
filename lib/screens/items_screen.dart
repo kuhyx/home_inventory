@@ -4,18 +4,17 @@ library;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
-import 'package:home_inventory/models/adjustment.dart';
-import 'package:home_inventory/models/inventory_summary.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/screens/filter_sheet.dart';
 import 'package:home_inventory/screens/item_detail_screen.dart';
 import 'package:home_inventory/screens/quick_add_sheet.dart';
 import 'package:home_inventory/screens/settings_screen.dart';
-import 'package:home_inventory/ui/code_prompt.dart';
 import 'package:home_inventory/ui/empty_state.dart';
 import 'package:home_inventory/ui/item_tile.dart';
-import 'package:home_inventory/ui/theme.dart';
+import 'package:home_inventory/ui/items_header.dart';
+import 'package:home_inventory/ui/scan_restock.dart';
+import 'package:home_inventory/ui/summary_strip.dart';
 
 /// Searchable list of everything owned.
 class ItemsScreen extends StatefulWidget {
@@ -107,10 +106,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final edited = await showModalBottomSheet<ItemFilter>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => FilterSheet(
-        repository: widget.repository,
-        initial: _filter,
-      ),
+      builder: (_) =>
+          FilterSheet(repository: widget.repository, initial: _filter),
     );
     // Null means dismissed, which is not the same as an empty filter: the
     // sheet returns a filter only when Apply was pressed.
@@ -147,10 +144,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SettingsScreen(
-          repository: widget.repository,
-          now: widget.now,
-        ),
+        builder: (_) =>
+            SettingsScreen(repository: widget.repository, now: widget.now),
       ),
     );
   }
@@ -167,31 +162,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
   }
 
-  /// Restocks whatever a typed code is linked to.
-  ///
-  /// Unpacking the shopping is the moment this exists for: one code per bag,
-  /// no navigating to each item first. An unknown code says so rather than
-  /// silently doing nothing — the alternative is a user tapping the same
-  /// button three times wondering which part is broken.
-  Future<void> _scan() async {
-    final entry = await promptForCode(context, title: 'Scan to restock');
-    if (entry == null) return;
-    final item = await widget.repository.applyScan(
-      entry.code,
-      source: AdjustmentSource.restock,
-      now: widget.now?.call(),
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          item == null
-              ? 'No item is linked to ${entry.code}'
-              : 'Restocked ${item.name}',
-        ),
-      ),
-    );
-  }
+  Future<void> _scan() => promptScanRestock(
+    context,
+    repository: widget.repository,
+    now: widget.now,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -203,60 +178,17 @@ class _ItemsScreenState extends State<ItemsScreen> {
         bottom: false,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _search,
-                      onChanged: _onSearchChanged,
-                      decoration: const InputDecoration(
-                        labelText: 'Search',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  IconButton(
-                    onPressed: _openFilter,
-                    // The badge counts *facets*, not selections, so three
-                    // rooms read as one restriction — which is how many taps
-                    // it takes to undo them from the sheet.
-                    icon: Badge(
-                      isLabelVisible: _filter.activeCount > 0,
-                      label: Text('${_filter.activeCount}'),
-                      child: const Icon(Icons.filter_list),
-                    ),
-                    tooltip: 'Filter',
-                  ),
-                  PopupMenuButton<ItemSort>(
-                    onSelected: _setSort,
-                    icon: const Icon(Icons.sort),
-                    tooltip: 'Sort',
-                    itemBuilder: (_) => [
-                      for (final sort in ItemSort.values)
-                        CheckedPopupMenuItem(
-                          value: sort,
-                          checked: sort == _sort,
-                          child: Text(_sortLabel(sort)),
-                        ),
-                    ],
-                  ),
-                  IconButton(
-                    onPressed: _scan,
-                    icon: const Icon(Icons.qr_code_scanner),
-                    tooltip: 'Scan to restock',
-                  ),
-                  IconButton(
-                    onPressed: _openSettings,
-                    icon: const Icon(Icons.sync),
-                    tooltip: 'Sync',
-                  ),
-                ],
-              ),
+            ItemsHeader(
+              searchController: _search,
+              onSearchChanged: _onSearchChanged,
+              activeFilterCount: _filter.activeCount,
+              onOpenFilter: _openFilter,
+              sort: _sort,
+              onSortSelected: _setSort,
+              onScan: _scan,
+              onOpenSettings: _openSettings,
             ),
-            _SummaryStrip(repository: widget.repository),
+            SummaryStrip(repository: widget.repository),
             Expanded(
               child: StreamBuilder<List<Item>>(
                 stream: _stream,
@@ -294,52 +226,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
         tooltip: 'Add an item',
         child: const Icon(Icons.add),
       ),
-    );
-  }
-}
-
-String _sortLabel(ItemSort sort) => switch (sort) {
-  ItemSort.updatedDesc => 'Recently changed',
-  ItemSort.nameAsc => 'Name (A-Z)',
-  ItemSort.createdDesc => 'Newest first',
-  ItemSort.quantityAsc => 'Fewest first',
-  ItemSort.locationAsc => 'By location',
-  ItemSort.lowStockFirst => 'Running low first',
-  ItemSort.expiringFirst => 'Expiring first',
-};
-
-/// One-line headline counts above the list.
-class _SummaryStrip extends StatelessWidget {
-  const _SummaryStrip({required this.repository});
-
-  final ItemRepository repository;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return StreamBuilder<InventorySummary>(
-      stream: repository.watchSummary(),
-      builder: (context, snapshot) {
-        final summary = snapshot.data ?? InventorySummary.empty;
-        if (summary.total == 0) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.only(
-            left: AppSpacing.md,
-            right: AppSpacing.md,
-            bottom: AppSpacing.sm,
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '${summary.total} ${summary.total == 1 ? 'item' : 'items'}'
-              ' · ${summary.toBuy} to buy',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

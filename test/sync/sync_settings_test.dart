@@ -132,11 +132,7 @@ void main() {
 
     // The token belongs in the OS keystore; SharedPreferences is plaintext.
     test('keeps the token out of shared preferences', () async {
-      const settings = SyncSettings(
-        owner: 'o',
-        repo: 'r',
-        token: 'gho_secret',
-      );
+      const settings = SyncSettings(owner: 'o', repo: 'r', token: 'gho_secret');
 
       await settings.save();
 

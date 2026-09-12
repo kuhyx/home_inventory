@@ -25,5 +25,8 @@ Future<ItemRepository> openRepository() async {
     nodeId = const Uuid().v4();
     await prefs.setString(ItemRepository.kNodeId, nodeId);
   }
-  return ItemRepository.openWith(persistence: persistence, nodeId: nodeId);
+  return await ItemRepository.openWith(
+    persistence: persistence,
+    nodeId: nodeId,
+  );
 }

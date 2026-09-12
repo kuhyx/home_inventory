@@ -58,10 +58,9 @@ void main() {
 
   group('findBrowser', () {
     test('prefers INVENTORY_BROWSER when it exists', () {
-      final found = findBrowser(
-        {'INVENTORY_BROWSER': '/opt/mine/browser'},
-        exists: (path) => true,
-      );
+      final found = findBrowser({
+        'INVENTORY_BROWSER': '/opt/mine/browser',
+      }, exists: (path) => true);
 
       expect(found, '/opt/mine/browser');
     });
@@ -70,10 +69,9 @@ void main() {
     // browser that is; an empty entry is the no-override case.
     test('falls through when the override is missing or unset', () {
       expect(
-        findBrowser(
-          {'INVENTORY_BROWSER': '/opt/gone/browser'},
-          exists: (path) => path == '/usr/bin/chromium',
-        ),
+        findBrowser({
+          'INVENTORY_BROWSER': '/opt/gone/browser',
+        }, exists: (path) => path == '/usr/bin/chromium'),
         '/usr/bin/chromium',
       );
       expect(

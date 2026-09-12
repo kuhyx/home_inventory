@@ -175,23 +175,22 @@ void main() {
       expect(find.text('Imported inventory.'), findsOneWidget);
     });
 
-    testWidgets(
-      'a cancelled import reports success — nothing was merged',
-      (tester) async {
-        selector.fileToOpen = null;
-        await pumpSettings(tester);
+    testWidgets('a cancelled import reports success — nothing was merged', (
+      tester,
+    ) async {
+      selector.fileToOpen = null;
+      await pumpSettings(tester);
 
-        await tester.tap(find.text('Sync settings'));
-        await tester.pumpAndSettle();
-        await tapAndFlush(tester, 'Import inventory');
+      await tester.tap(find.text('Sync settings'));
+      await tester.pumpAndSettle();
+      await tapAndFlush(tester, 'Import inventory');
 
-        // Same BackupSlot limitation as export: a cancelled picker returns
-        // normally, so the screen reports "Imported inventory." either way.
-        // What actually matters — that nothing was merged — is asserted
-        // directly.
-        expect(repo.listItems(), isEmpty);
-      },
-    );
+      // Same BackupSlot limitation as export: a cancelled picker returns
+      // normally, so the screen reports "Imported inventory." either way.
+      // What actually matters — that nothing was merged — is asserted
+      // directly.
+      expect(repo.listItems(), isEmpty);
+    });
 
     // Picking the wrong file is ordinary user input. The decoder throws a
     // TypeError (an Error, not an Exception) on JSON of the wrong shape,
@@ -208,10 +207,7 @@ void main() {
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 
-      expect(
-        find.textContaining('not an inventory backup'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('not an inventory backup'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -227,10 +223,7 @@ void main() {
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 
-      expect(
-        find.textContaining('not an inventory backup'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('not an inventory backup'), findsOneWidget);
     });
   });
 }

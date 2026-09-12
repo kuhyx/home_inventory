@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
+import 'package:home_inventory/data/legacy_location_filing.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/ui/location_field.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
@@ -81,9 +82,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       return false;
     }
     final at = (widget.now ?? DateTime.now)();
-    // Legacy strings alongside the id, for a device still on a build that
-    // cannot read `location_id`. See `ItemFormScreen._save`.
-    final path = widget.repository.pathOf(_locationId);
+    final legacy = legacyStringsFor(widget.repository.pathOf(_locationId));
     await widget.repository.upsert(
       Item(
         id: const Uuid().v4(),
@@ -91,8 +90,8 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
         quantity: quantity,
         unit: '',
         locationId: _locationId,
-        room: path.isEmpty ? '' : path.first,
-        container: path.length > 1 ? path.skip(1).join(' › ') : '',
+        room: legacy.room,
+        container: legacy.container,
         category: '',
         lowStockAt: null,
         bestBefore: null,

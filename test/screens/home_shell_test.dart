@@ -48,10 +48,7 @@ void main() {
     // skipOffstage: false because IndexedStack keeps the unselected tabs
     // built but offstage — which is precisely the condition under test.
     expect(find.byType(ItemsScreen), findsOneWidget);
-    expect(
-      find.byType(LocationsScreen, skipOffstage: false),
-      findsOneWidget,
-    );
+    expect(find.byType(LocationsScreen, skipOffstage: false), findsOneWidget);
     expect(find.byType(ShoppingScreen, skipOffstage: false), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

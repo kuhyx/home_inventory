@@ -58,10 +58,7 @@ class _HomeShellState extends State<HomeShell> {
           now: widget.now,
           requestedFilter: _requestedFilter,
         ),
-        LocationsScreen(
-          repository: widget.repository,
-          onSelect: _showLocation,
-        ),
+        LocationsScreen(repository: widget.repository, onSelect: _showLocation),
         ShoppingScreen(repository: widget.repository, now: widget.now),
       ],
     ),

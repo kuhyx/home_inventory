@@ -45,11 +45,7 @@ class ItemDetailScreen extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        return _DetailBody(
-          repository: repository,
-          item: item,
-          clock: _clock,
-        );
+        return _DetailBody(repository: repository, item: item, clock: _clock);
       },
     );
   }

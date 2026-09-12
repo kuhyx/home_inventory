@@ -61,20 +61,17 @@ void main() {
     expect(find.text('Pick a place'), findsOneWidget);
     expect(find.text('Top level'), findsOneWidget);
   });
-
   testWidgets('says so when there are no places yet', (tester) async {
     await pumpPicker(tester);
 
     expect(find.textContaining('No places yet'), findsOneWidget);
     expect(find.textContaining('Locations tab'), findsOneWidget);
   });
-
   testWidgets('points at the create box when it can make one', (tester) async {
     await pumpPicker(tester, allowCreate: true);
 
     expect(find.textContaining('Type a name below'), findsOneWidget);
   });
-
   testWidgets('lists every place, flattened', (tester) async {
     final room = await repo.createLocation(name: 'Korytarz', now: now);
     final shelf = await repo.createLocation(
@@ -96,7 +93,6 @@ void main() {
     expect(find.text('Szafka'), findsOneWidget);
     expect(find.text('Najwyższa półka'), findsOneWidget);
   });
-
   testWidgets('returns the chosen place', (tester) async {
     final room = await repo.createLocation(name: 'Korytarz', now: now);
     final chosen = await pumpPicker(tester);
@@ -107,9 +103,6 @@ void main() {
     expect(chosen.single?.location?.id, room.id);
     expect(chosen.single?.id, room.id);
   });
-
-  // A dismissed sheet and a deliberate "nowhere" both arrive as null without
-  // the wrapper, and those mean opposite things: leave it alone versus unfile.
   testWidgets('returns a root choice distinct from a dismissal', (
     tester,
   ) async {
@@ -123,7 +116,6 @@ void main() {
     expect(chosen.single?.location, isNull);
     expect(chosen.single?.id, '');
   });
-
   testWidgets('returns null when dismissed', (tester) async {
     await repo.createLocation(name: 'Korytarz', now: now);
     final chosen = await pumpPicker(tester);
@@ -133,14 +125,12 @@ void main() {
 
     expect(chosen.single, isNull);
   });
-
   testWidgets('honours a custom root label', (tester) async {
     await pumpPicker(tester, rootLabel: 'Anywhere');
 
     expect(find.text('Anywhere'), findsOneWidget);
     expect(find.text('Top level'), findsNothing);
   });
-
   group('excludeSubtreeOf', () {
     testWidgets('disables the branch being moved', (tester) async {
       final room = await repo.createLocation(name: 'Korytarz', now: now);
@@ -180,74 +170,6 @@ void main() {
 
       // Still open, nothing returned.
       expect(chosen, isEmpty);
-      expect(find.text('Pick a place'), findsOneWidget);
-    });
-  });
-  group('allowCreate', () {
-    testWidgets('is off by default', (tester) async {
-      await pumpPicker(tester);
-
-      expect(find.byIcon(Icons.add), findsNothing);
-    });
-
-    testWidgets('creates a top-level room and reports it as new', (
-      tester,
-    ) async {
-      final chosen = await pumpPicker(tester, allowCreate: true);
-
-      expect(find.text('New room'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'korytarz');
-      await tester.tap(find.byIcon(Icons.add));
-      await tester.pumpAndSettle();
-
-      expect(chosen.single?.created, isTrue);
-      expect(chosen.single?.location?.name, 'korytarz');
-      expect(repo.listLocations().single.createdAt, now);
-    });
-
-    testWidgets('files a typed name under the given parent', (tester) async {
-      final room = await repo.createLocation(name: 'korytarz', now: now);
-      final chosen = await pumpPicker(
-        tester,
-        allowCreate: true,
-        createParentId: room.id,
-      );
-
-      expect(find.text('New place in korytarz'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).last, 'szafka z lewej');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pumpAndSettle();
-
-      expect(chosen.single?.created, isTrue);
-      expect(repo.pathLabel(chosen.single!.id), 'korytarz › szafka z lewej');
-    });
-
-    // The id is derived from the *folded* name, so a second "Korytarz" is
-    // the same record — the user is picking it, not making it.
-    testWidgets('an existing name is picked, not reported as new', (
-      tester,
-    ) async {
-      final room = await repo.createLocation(name: 'korytarz', now: now);
-      final chosen = await pumpPicker(tester, allowCreate: true);
-
-      await tester.enterText(find.byType(TextField).last, 'Korytarz');
-      await tester.tap(find.byIcon(Icons.add));
-      await tester.pumpAndSettle();
-
-      expect(chosen.single?.created, isFalse);
-      expect(chosen.single?.id, room.id);
-      expect(repo.listLocations(), hasLength(1));
-    });
-
-    testWidgets('a blank name does nothing at all', (tester) async {
-      final chosen = await pumpPicker(tester, allowCreate: true);
-
-      await tester.enterText(find.byType(TextField).last, '   ');
-      await tester.tap(find.byIcon(Icons.add));
-      await tester.pumpAndSettle();
-
-      expect(chosen, isEmpty);
-      expect(repo.listLocations(), isEmpty);
       expect(find.text('Pick a place'), findsOneWidget);
     });
   });

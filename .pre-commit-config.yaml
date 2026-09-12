@@ -50,6 +50,17 @@ repos:
         require_serial: true
         stages: [pre-push]
 
+      # No file over 250 lines. A file that cannot be read in one piece
+      # forces re-reads and partial edits, which is the largest avoidable
+      # cost in an LLM-assisted workflow. Checks the files in the commit, so
+      # an unrelated commit never trips over someone else's long file; the
+      # file-length workflow covers the whole tree on push.
+      - id: file-length
+        name: files under 250 lines
+        entry: scripts/check_file_length.sh
+        language: system
+        files: \.(dart|sh|py|yaml|yml|md|markdown|txt)$
+
       # Four markdown namespaces (README / CLAUDE* / DOCS* / TODO*), plus the
       # rule that a TODO carries "REMOVE ME AFTER FINISH" and nothing else may.
       # Shared gate in ~/src/utils owns the namespaces and the exemption list, so

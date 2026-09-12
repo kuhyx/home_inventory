@@ -58,10 +58,7 @@ void main() {
     });
 
     test('the date itself says Today', () {
-      expect(
-        Freshness.between(now, DateTime.utc(2026, 7, 26)).label,
-        'Today',
-      );
+      expect(Freshness.between(now, DateTime.utc(2026, 7, 26)).label, 'Today');
     });
 
     test('future dates count the days', () {

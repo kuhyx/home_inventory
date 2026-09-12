@@ -29,7 +29,7 @@ dependencies:
   file_selector: 1.1.0
   flutter:
     sdk: flutter
-  flutter_secure_storage: 11.0.0
+  flutter_secure_storage: 11.1.1
 
   github_device_auth:
     git:
@@ -40,7 +40,7 @@ dependencies:
   # Dart so it keeps working on Linux desktop and headless.
   google_sign_in: 7.2.0
   http: 1.6.0
-  idb_shim: 2.9.8
+  idb_shim: 2.9.9
   # For @immutable on the pure-Dart models. Deliberately not
   # `package:flutter/foundation.dart`, which exports the same annotation: the
   # models are reachable from `tool/sync_smoke.dart`, which runs under plain
@@ -73,7 +73,7 @@ dev_dependencies:
     sdk: flutter
   plugin_platform_interface: 2.1.8
   url_launcher_platform_interface: 2.3.2
-  very_good_analysis: ^10.3.0
+  very_good_analysis: ^11.0.0
 
 flutter:
   uses-material-design: true

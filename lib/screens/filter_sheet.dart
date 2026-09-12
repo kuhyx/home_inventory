@@ -6,6 +6,7 @@ import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
+import 'package:home_inventory/ui/filter_facets.dart';
 import 'package:home_inventory/ui/location_picker.dart';
 import 'package:home_inventory/ui/theme.dart';
 
@@ -119,11 +120,11 @@ class _FilterSheetState extends State<FilterSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ChipGroup(
+                    ChipGroup(
                       label: 'Stock',
                       chips: [
                         for (final state in StockState.values)
-                          _Chip(
+                          FacetChip(
                             label: _stockLabel(state),
                             selected: _filter.stock.contains(state),
                             onSelected: () => _toggle(
@@ -134,11 +135,11 @@ class _FilterSheetState extends State<FilterSheet> {
                           ),
                       ],
                     ),
-                    _ChipGroup(
+                    ChipGroup(
                       label: 'Best before',
                       chips: [
                         for (final state in FreshnessState.values)
-                          _Chip(
+                          FacetChip(
                             label: _freshnessLabel(state),
                             selected: _filter.freshness.contains(state),
                             onSelected: () => _toggle(
@@ -150,11 +151,11 @@ class _FilterSheetState extends State<FilterSheet> {
                           ),
                       ],
                     ),
-                    _ChipGroup(
+                    ChipGroup(
                       label: 'Flags',
                       chips: [
                         for (final flag in ItemFlag.values)
-                          _Chip(
+                          FacetChip(
                             label: _flagLabel(flag),
                             selected: _filter.flags.contains(flag),
                             onSelected: () => _toggle(
@@ -165,7 +166,7 @@ class _FilterSheetState extends State<FilterSheet> {
                           ),
                       ],
                     ),
-                    _PlaceFacet(
+                    PlaceFacet(
                       label: placeLabel,
                       selected: _filter.locationIds.isNotEmpty,
                       onPick: () => _pickPlace(repository),
@@ -175,19 +176,18 @@ class _FilterSheetState extends State<FilterSheet> {
                         ),
                       ),
                     ),
-                    _ChipGroup(
+                    ChipGroup(
                       label: 'Categories',
                       chips: [
                         for (final category in repository.knownCategories())
-                          _Chip(
+                          FacetChip(
                             label: category,
                             selected: _filter.categories.contains(category),
                             onSelected: () => _toggle(
                               _filter.categories,
                               category,
-                              (next) => _filter = _filter.copyWith(
-                                categories: next,
-                              ),
+                              (next) =>
+                                  _filter = _filter.copyWith(categories: next),
                             ),
                           ),
                       ],
@@ -226,118 +226,4 @@ class _FilterSheetState extends State<FilterSheet> {
     ItemFlag.wanted => 'Wanted',
     ItemFlag.sellable => 'Sellable',
   };
-}
-
-/// A labelled row of chips, hidden entirely when it has nothing to offer.
-/// The "Place" facet: a button opening the tree picker, plus a clear.
-///
-/// Not a chip row like the other facets, because the places form a tree and a
-/// flat row of every shelf in the flat says nothing about which cupboard each
-/// one is in.
-class _PlaceFacet extends StatelessWidget {
-  const _PlaceFacet({
-    required this.label,
-    required this.selected,
-    required this.onPick,
-    required this.onClear,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onPick;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Place',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onPick,
-                  icon: const Icon(Icons.place_outlined),
-                  label: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(label, overflow: TextOverflow.ellipsis),
-                  ),
-                ),
-              ),
-              if (selected)
-                IconButton(
-                  onPressed: onClear,
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Anywhere',
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChipGroup extends StatelessWidget {
-  const _ChipGroup({required this.label, required this.chips});
-
-  final String label;
-  final List<Widget> chips;
-
-  @override
-  Widget build(BuildContext context) {
-    // An empty group is worse than no group: a "Categories" heading over blank
-    // space reads as a loading failure rather than "you have not used any".
-    if (chips.isEmpty) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.xs,
-            children: chips,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) => FilterChip(
-    label: Text(label),
-    selected: selected,
-    onSelected: (_) => onSelected(),
-  );
 }

@@ -127,14 +127,8 @@ void main() {
         WrapperServer.contentTypeFor('a.wasm').mimeType,
         'application/wasm',
       );
-      expect(
-        WrapperServer.contentTypeFor('a.js').mimeType,
-        'text/javascript',
-      );
-      expect(
-        WrapperServer.contentTypeFor('a.mjs').mimeType,
-        'text/javascript',
-      );
+      expect(WrapperServer.contentTypeFor('a.js').mimeType, 'text/javascript');
+      expect(WrapperServer.contentTypeFor('a.mjs').mimeType, 'text/javascript');
       expect(WrapperServer.contentTypeFor('a.html').mimeType, 'text/html');
       expect(
         WrapperServer.contentTypeFor('a.json').mimeType,

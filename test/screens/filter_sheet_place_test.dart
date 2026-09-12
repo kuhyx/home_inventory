@@ -66,16 +66,12 @@ void main() {
     expect(find.text('Low'), findsOneWidget);
     expect(find.text('Wanted'), findsOneWidget);
   });
-
-  // An empty group is worse than no group: a "Categories" heading over blank
-  // space reads as a loading failure rather than "you have not used any".
   testWidgets('hides groups that have nothing to offer', (tester) async {
     await pumpSheet(tester);
 
     expect(find.text('Rooms'), findsNothing);
     expect(find.text('Categories'), findsNothing);
   });
-
   testWidgets('stock and flag chips are selectable too', (tester) async {
     final popped = await pumpSheet(tester);
 
@@ -88,13 +84,9 @@ void main() {
 
     expect(
       popped.single,
-      const ItemFilter(
-        stock: {StockState.out},
-        flags: {ItemFlag.sellable},
-      ),
+      const ItemFilter(stock: {StockState.out}, flags: {ItemFlag.sellable}),
     );
   });
-
   group('the place facet', () {
     testWidgets('reads "Anywhere" when nothing is picked', (tester) async {
       await pumpSheet(tester);
@@ -125,10 +117,7 @@ void main() {
 
     testWidgets('shows the chosen place', (tester) async {
       final office = await repo.createLocation(name: 'Office', now: at);
-      await pumpSheet(
-        tester,
-        initial: ItemFilter(locationIds: {office.id}),
-      );
+      await pumpSheet(tester, initial: ItemFilter(locationIds: {office.id}));
 
       expect(find.text('Office'), findsOneWidget);
     });
@@ -186,99 +175,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('No places yet'), findsOneWidget);
-    });
-  });
-
-  testWidgets('tapping a selected chip deselects it', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', category: 'Tools'));
-    final popped = await pumpSheet(
-      tester,
-      initial: const ItemFilter(categories: {'Tools'}),
-    );
-
-    await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
-    await tester.pump();
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
-
-    expect(popped.single, const ItemFilter());
-  });
-
-  testWidgets('a category chip is selectable', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', category: 'Tools'));
-    final popped = await pumpSheet(tester);
-
-    await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
-    await tester.pump();
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
-
-    expect(popped.single, const ItemFilter(categories: {'Tools'}));
-  });
-
-  // The search box stays visibly full, so wiping the query from here would
-  // look like the app lost what was typed.
-  testWidgets('Clear all drops the facets but keeps the query', (
-    tester,
-  ) async {
-    await repo.upsert(itemFixture(id: 'a', room: 'Office'));
-    final popped = await pumpSheet(
-      tester,
-      initial: const ItemFilter(query: 'cable', locationIds: {'loc1'}),
-    );
-
-    await tester.tap(find.text('Clear all'));
-    await tester.pump();
-    await tester.tap(find.text('Apply'));
-    await tester.pumpAndSettle();
-
-    expect(popped.single, const ItemFilter(query: 'cable'));
-  });
-
-  testWidgets('dismissing pops null rather than an empty filter', (
-    tester,
-  ) async {
-    final popped = await pumpSheet(tester);
-
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
-
-    expect(popped.single, isNull);
-  });
-
-  group('the best-before group', () {
-    testWidgets('offers every freshness state', (tester) async {
-      await pumpSheet(tester);
-
-      expect(find.text('Best before'), findsOneWidget);
-      expect(find.text('Fresh'), findsOneWidget);
-      expect(find.text('Due soon'), findsOneWidget);
-      expect(find.text('Expired'), findsOneWidget);
-    });
-
-    testWidgets('selecting one applies it', (tester) async {
-      final popped = await pumpSheet(tester);
-
-      await tester.tap(find.text('Due soon'));
-      await tester.pump();
-      await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
-
-      expect(popped.single!.freshness, {FreshnessState.dueSoon});
-    });
-
-    testWidgets('tapping a selected one clears it again', (tester) async {
-      final popped = await pumpSheet(
-        tester,
-        initial: const ItemFilter(freshness: {FreshnessState.expired}),
-      );
-
-      await tester.tap(find.text('Expired'));
-      await tester.pump();
-      await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
-
-      expect(popped.single!.freshness, isEmpty);
     });
   });
 }

@@ -76,9 +76,7 @@ class _CodeDialogState extends State<_CodeDialog> {
           TextField(
             controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'One scan is worth',
-            ),
+            decoration: const InputDecoration(labelText: 'One scan is worth'),
           ),
         ],
       ],

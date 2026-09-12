@@ -2,21 +2,21 @@ import 'package:crdt_sync/crdt_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/record_types.dart';
 
-Hlc _hlc(int ms) => Hlc(wallTimeMs: ms, counter: 0, nodeId: 'n');
+Hlc hlc(int ms) => Hlc(wallTimeMs: ms, counter: 0, nodeId: 'n');
 
 Record _adjustment(String id, DateTime at) => Record(
   id: id,
   fields: {
-    kTypeField: (kTypeAdjustment, _hlc(1)),
-    kAtField: (at.toIso8601String(), _hlc(1)),
+    kTypeField: (kTypeAdjustment, hlc(1)),
+    kAtField: (at.toIso8601String(), hlc(1)),
   },
 );
 
 Record _item(String id, {bool deleted = false}) => Record(
   id: id,
-  fields: {kTypeField: (kTypeItem, _hlc(1))},
+  fields: {kTypeField: (kTypeItem, hlc(1))},
   deleted: deleted,
-  deletedHlc: deleted ? _hlc(2) : null,
+  deletedHlc: deleted ? hlc(2) : null,
 );
 
 void main() {
@@ -39,9 +39,9 @@ void main() {
     test('an unknown or missing type is not an adjustment', () {
       final unknown = Record(
         id: 'x',
-        fields: {kTypeField: ('quantum-widget', _hlc(1))},
+        fields: {kTypeField: ('quantum-widget', hlc(1))},
       );
-      final typeless = Record(id: 'y', fields: {'name': ('hi', _hlc(1))});
+      final typeless = Record(id: 'y', fields: {'name': ('hi', hlc(1))});
 
       expect(isAdjustmentRecord(unknown), isFalse);
       expect(isAdjustmentRecord(typeless), isFalse);
@@ -55,7 +55,7 @@ void main() {
 
     // Records written before the type field existed.
     test('a missing type reads as an item', () {
-      final typeless = Record(id: 'y', fields: {'name': ('hi', _hlc(1))});
+      final typeless = Record(id: 'y', fields: {'name': ('hi', hlc(1))});
 
       expect(isItemRecord(typeless), isTrue);
     });
@@ -70,7 +70,7 @@ void main() {
     // an unknown kind has to be excluded even though the pruner keeps it.
     test('a kind from a newer build is not an item', () {
       for (final type in [kTypeLocation, kTypeItemType, 'quantum-widget']) {
-        final record = Record(id: 'x', fields: {kTypeField: (type, _hlc(1))});
+        final record = Record(id: 'x', fields: {kTypeField: (type, hlc(1))});
 
         expect(isItemRecord(record), isFalse, reason: type);
       }
@@ -81,7 +81,7 @@ void main() {
     test('is not the inverse of isAdjustmentRecord', () {
       final unknown = Record(
         id: 'x',
-        fields: {kTypeField: ('quantum-widget', _hlc(1))},
+        fields: {kTypeField: ('quantum-widget', hlc(1))},
       );
 
       expect(isAdjustmentRecord(unknown), isFalse);
@@ -113,10 +113,7 @@ void main() {
     // has been offline long enough — user-visible harm, unlike an ancient
     // adjustment briefly reappearing.
     test('never drops an item, however old, tombstoned or not', () {
-      final log = {
-        'live': _item('live'),
-        'gone': _item('gone', deleted: true),
-      };
+      final log = {'live': _item('live'), 'gone': _item('gone', deleted: true)};
 
       expect(dropAncientAdjustments(log, now).keys, ['live', 'gone']);
     });
@@ -126,8 +123,8 @@ void main() {
         'a': Record(
           id: 'a',
           fields: {
-            kTypeField: (kTypeAdjustment, _hlc(1)),
-            kAtField: ('not-a-date', _hlc(1)),
+            kTypeField: (kTypeAdjustment, hlc(1)),
+            kAtField: ('not-a-date', hlc(1)),
           },
         ),
       };
@@ -140,8 +137,8 @@ void main() {
         'a': Record(
           id: 'a',
           fields: {
-            kTypeField: (kTypeAdjustment, _hlc(1)),
-            kAtField: (12345, _hlc(1)),
+            kTypeField: (kTypeAdjustment, hlc(1)),
+            kAtField: (12345, hlc(1)),
           },
         ),
       };
@@ -151,10 +148,7 @@ void main() {
 
     test('keeps an adjustment with no timestamp field at all', () {
       final log = {
-        'a': Record(
-          id: 'a',
-          fields: {kTypeField: (kTypeAdjustment, _hlc(1))},
-        ),
+        'a': Record(id: 'a', fields: {kTypeField: (kTypeAdjustment, hlc(1))}),
       };
 
       expect(dropAncientAdjustments(log, now).keys, ['a']);

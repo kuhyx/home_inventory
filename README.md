@@ -64,6 +64,7 @@ in-flight search across tab switches:
 
 ```bash
 bash scripts/ci_mirror.sh        # everything CI runs; also the pre-push hook
+bash scripts/check_file_length.sh --all   # the 250-line cap
 flutter test --coverage          # 100% line coverage is a hard gate
 lcov --summary coverage/lcov.info
 flutter analyze --fatal-infos --fatal-warnings
@@ -158,6 +159,14 @@ there would grow the merge input on every tick.
 
 ## Conventions
 
+- **No file over 250 lines**, source and prose alike, enforced by
+  `scripts/check_file_length.sh` in pre-commit, in `ci_mirror.sh` and in the
+  `file-length` workflow. `ItemRepository` is therefore split across `part`
+  files (`item_repository_{reads,writes,locations,location_writes,barcodes,
+  history,sync,suggestions,mapping}.dart`), each holding a public extension
+  on the class — call sites stay `repository.locationTree()` and the store
+  stays private. Parts show up in `lcov.info` as their own entries, so the
+  coverage gates see them individually.
 - `analysis_options.yaml` is copied verbatim from `~/src/diet-guard/app`
   (`very_good_analysis`); never `flutter_lints`.
 - Design tokens live in `lib/ui/theme.dart`, from the shared

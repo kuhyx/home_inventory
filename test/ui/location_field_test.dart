@@ -144,10 +144,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Created "szafka z lewej" in korytarz'),
-      findsOneWidget,
-    );
+    expect(find.text('Created "szafka z lewej" in korytarz'), findsOneWidget);
     expect(find.text('korytarz › szafka z lewej'), findsOneWidget);
   });
 

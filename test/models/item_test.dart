@@ -60,10 +60,7 @@ void main() {
   group('needsBuying', () {
     test('is true for anything not fully stocked', () {
       expect(itemFixture(quantity: 0).needsBuying, isTrue);
-      expect(
-        itemFixture(quantity: 1, lowStockAt: 2).needsBuying,
-        isTrue,
-      );
+      expect(itemFixture(quantity: 1, lowStockAt: 2).needsBuying, isTrue);
     });
 
     test('is true for a wanted item even when stocked', () {

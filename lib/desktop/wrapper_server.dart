@@ -37,11 +37,7 @@ class WrapperServer {
            (Platform.environment[kSyncAccountEnvVar] ?? '').isNotEmpty,
        syncConfigDir =
            syncConfigDir ??
-           p.join(
-             Platform.environment['HOME'] ?? '',
-             '.config',
-             'crdt-sync',
-           );
+           p.join(Platform.environment['HOME'] ?? '', '.config', 'crdt-sync');
 
   /// Whether the sync-account route answers; off unless explicitly enabled.
   final bool serveSyncAccount;
@@ -74,7 +70,7 @@ class WrapperServer {
   }
 
   /// Stops serving and releases the port.
-  Future<void> stop() async => _server?.close(force: true);
+  Future<void> stop() async => await _server?.close(force: true);
 
   Future<void> _serve(HttpServer server) async {
     await for (final request in server) {
@@ -89,12 +85,12 @@ class WrapperServer {
 
   Future<void> _handle(HttpRequest request) async {
     if (request.uri.path == '/backup/log') {
-      return _file(request, logPath);
+      return await _file(request, logPath);
     }
     if (request.uri.path == kSyncAccountPath) {
-      return _syncAccount(request);
+      return await _syncAccount(request);
     }
-    return _static(request, request.uri.path);
+    return await _static(request, request.uri.path);
   }
 
   /// Serves the shared sync account so a desktop install can self-provision.

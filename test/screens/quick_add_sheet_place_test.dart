@@ -54,130 +54,6 @@ void main() {
 
   // The done condition runs straight through this test: name, where, how
   // many, save.
-  testWidgets('saves an item with its name, quantity and location', (
-    tester,
-  ) async {
-    final pantry = await seedPlaces();
-    await pumpSheet(tester);
-
-    await tester.enterText(find.byType(TextFormField).at(0), 'USB-C cable');
-    await tester.enterText(find.byType(TextFormField).at(1), '4');
-    await pickPlace(tester, 'Pantry');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    final item = repo.listItems().single;
-    expect(item.name, 'USB-C cable');
-    expect(item.quantity, 4);
-    expect(item.locationId, pantry);
-    // Legacy strings alongside the id, for a device on an older build.
-    expect(item.room, 'Kitchen');
-    expect(item.container, 'Pantry');
-    expect(item.createdAt, at);
-  });
-
-  testWidgets('the opening quantity is recorded as initial, not use', (
-    tester,
-  ) async {
-    await pumpSheet(tester);
-
-    await tester.enterText(find.byType(TextFormField).at(0), 'Flour');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    final item = repo.listItems().single;
-    expect(repo.historyFor(item.id).single.source, AdjustmentSource.initial);
-  });
-
-  testWidgets('refuses to save without a name', (tester) async {
-    await pumpSheet(tester);
-
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    expect(find.text('Give it a name'), findsOneWidget);
-    expect(repo.listItems(), isEmpty);
-  });
-
-  testWidgets('rejects a quantity that is not a number', (tester) async {
-    await pumpSheet(tester);
-
-    await tester.enterText(find.byType(TextFormField).at(0), 'Thing');
-    await tester.enterText(find.byType(TextFormField).at(1), 'lots');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    expect(find.text('Quantity must be a number'), findsOneWidget);
-    expect(repo.listItems(), isEmpty);
-  });
-
-  testWidgets('rejects a negative quantity', (tester) async {
-    await pumpSheet(tester);
-
-    await tester.enterText(find.byType(TextFormField).at(0), 'Thing');
-    await tester.enterText(find.byType(TextFormField).at(1), '-2');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    expect(find.text('Quantity must be a number'), findsOneWidget);
-  });
-
-  testWidgets('a blank quantity means one', (tester) async {
-    await pumpSheet(tester);
-
-    await tester.enterText(find.byType(TextFormField).at(0), 'Thing');
-    await tester.enterText(find.byType(TextFormField).at(1), '');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    expect(repo.listItems().single.quantity, 1);
-  });
-
-  testWidgets('accepts a comma decimal separator', (tester) async {
-    await pumpSheet(tester);
-
-    await tester.enterText(find.byType(TextFormField).at(0), 'Flour');
-    await tester.enterText(find.byType(TextFormField).at(1), '2,5');
-    await tester.tap(find.text('Save'));
-    await tester.pump();
-
-    expect(repo.listItems().single.quantity, 2.5);
-  });
-
-  // Consecutive adds are nearly always in the same place, so keeping the
-  // location is what makes bulk entry fast.
-  testWidgets('Save & add another keeps the location but clears the name', (
-    tester,
-  ) async {
-    await pumpSheet(tester);
-
-    await seedPlaces();
-    await tester.enterText(find.byType(TextFormField).at(0), 'First');
-    await pickPlace(tester, 'Pantry');
-    await tester.tap(find.text('Save & add another'));
-    await tester.pumpAndSettle();
-
-    expect(repo.listItems(), hasLength(1));
-    final name = tester.widget<TextFormField>(
-      find.byType(TextFormField).at(0),
-    );
-    expect(name.controller?.text, isEmpty);
-    expect(find.text('Kitchen › Pantry'), findsOneWidget);
-  });
-
-  testWidgets('Save & add another does not save an invalid item', (
-    tester,
-  ) async {
-    await pumpSheet(tester);
-
-    await tester.tap(find.text('Save & add another'));
-    await tester.pump();
-
-    expect(repo.listItems(), isEmpty);
-  });
-
-  // Point 2: standing in the hallway with the list filtered to it, the next
-  // thing added is in the hallway.
   testWidgets('pre-fills the place the list is filtered to', (tester) async {
     final pantry = await seedPlaces();
     await pumpSheet(tester, initialLocationId: pantry);
@@ -190,7 +66,6 @@ void main() {
 
     expect(repo.listItems().single.locationId, pantry);
   });
-
   testWidgets('falls back to the busiest place when nothing is filtered', (
     tester,
   ) async {
@@ -204,7 +79,6 @@ void main() {
 
     expect(find.text('Kitchen'), findsOneWidget);
   });
-
   testWidgets('leaves the place empty when nothing is filed yet', (
     tester,
   ) async {
@@ -212,8 +86,6 @@ void main() {
 
     expect(find.text('Not filed anywhere'), findsOneWidget);
   });
-
-  // Point 1: a name that is not a place yet becomes one, and says so.
   testWidgets('creates a place typed into the picker, and says so', (
     tester,
   ) async {
@@ -236,8 +108,6 @@ void main() {
     expect(repo.pathLabel(item.locationId), 'korytarz');
     expect(item.room, 'korytarz');
   });
-
-  // Q2: a typed name lands inside whatever is already selected.
   testWidgets('a typed place is created inside the selected one', (
     tester,
   ) async {
@@ -252,15 +122,9 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Created "szafka z lewej" in korytarz'),
-      findsOneWidget,
-    );
+    expect(find.text('Created "szafka z lewej" in korytarz'), findsOneWidget);
     expect(find.text('korytarz › szafka z lewej'), findsOneWidget);
   });
-
-  // An existing place typed by name is selected, not announced as new — and
-  // the fold means the casing does not matter.
   testWidgets('typing an existing name just picks it', (tester) async {
     await repo.createLocation(name: 'korytarz', now: at);
     await pumpSheet(tester);

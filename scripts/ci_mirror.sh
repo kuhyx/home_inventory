@@ -113,6 +113,9 @@ main() {
     log "flutter pub get"
     flutter pub get
 
+    log "file-length gate"
+    bash scripts/check_file_length.sh --all
+
     log "flutter analyze --fatal-infos --fatal-warnings"
     flutter analyze --fatal-infos --fatal-warnings
 

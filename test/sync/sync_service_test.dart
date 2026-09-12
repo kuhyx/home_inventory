@@ -8,26 +8,26 @@ import 'package:home_inventory/sync/sync_service.dart';
 import '../support/builders.dart';
 import '../support/github_fake.dart';
 
-Hlc _hlc(int ms, {String node = 'peer'}) =>
+Hlc hlc(int ms, {String node = 'peer'}) =>
     Hlc(wallTimeMs: ms, counter: 0, nodeId: node);
 
 Record _peerItem(String id, String name) => Record(
   id: id,
   fields: {
-    kTypeField: (kTypeItem, _hlc(1)),
-    'name': (name, _hlc(1)),
-    'quantity': (1, _hlc(1)),
+    kTypeField: (kTypeItem, hlc(1)),
+    'name': (name, hlc(1)),
+    'quantity': (1, hlc(1)),
   },
 );
 
 Record _adjustment(String id, DateTime at) => Record(
   id: id,
   fields: {
-    kTypeField: (kTypeAdjustment, _hlc(1)),
-    'item_id': ('peer-1', _hlc(1)),
-    'delta': (-1, _hlc(1)),
-    kAtField: (at.toIso8601String(), _hlc(1)),
-    'source': ('use', _hlc(1)),
+    kTypeField: (kTypeAdjustment, hlc(1)),
+    'item_id': ('peer-1', hlc(1)),
+    'delta': (-1, hlc(1)),
+    kAtField: (at.toIso8601String(), hlc(1)),
+    'source': ('use', hlc(1)),
   },
 );
 
@@ -189,9 +189,9 @@ void main() {
           'shared': Record(
             id: 'shared',
             fields: {
-              kTypeField: (kTypeItem, _hlc(1)),
+              kTypeField: (kTypeItem, hlc(1)),
               // Written far in the future so it definitively wins its field.
-              'room': ('Pantry', _hlc(99999999999999)),
+              'room': ('Pantry', hlc(99999999999999)),
             },
           ),
         }),

@@ -90,10 +90,7 @@ void main() {
       final focused = input.focusedBorder! as OutlineInputBorder;
       expect(focused.borderSide.color, theme.colorScheme.primary);
       expect(focused.borderSide.width, 2);
-      expect(
-        focused.borderRadius,
-        BorderRadius.circular(AppRadius.sm),
-      );
+      expect(focused.borderRadius, BorderRadius.circular(AppRadius.sm));
     });
 
     test('dividers are hairlines on the outline token', () {
