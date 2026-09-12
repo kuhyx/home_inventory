@@ -449,6 +449,76 @@ void main() {
     });
   });
 
+  group('defaults for a new item', () {
+    test('mostUsedLocationId is empty with nothing filed', () async {
+      await repo.createLocation(name: 'Korytarz', now: now);
+      await repo.upsert(itemFixture(id: 'i1'));
+
+      expect(repo.mostUsedLocationId(), '');
+    });
+
+    test('mostUsedLocationId picks the busiest place', () async {
+      final room = await repo.createLocation(name: 'Korytarz', now: now);
+      final shelf = await repo.createLocation(
+        name: 'Szafka',
+        parentId: room.id,
+        now: now,
+      );
+      await repo.upsert(itemFixture(id: 'i1', locationId: shelf.id));
+      await repo.upsert(itemFixture(id: 'i2', locationId: shelf.id));
+      await repo.upsert(itemFixture(id: 'i3', locationId: room.id));
+
+      expect(repo.mostUsedLocationId(), shelf.id);
+    });
+
+    // A tie has to resolve the same way every rebuild, or the quick-add
+    // default flips between two shelves for no visible reason.
+    test('mostUsedLocationId breaks a tie deterministically', () async {
+      final a = await repo.createLocation(name: 'A', now: now);
+      final b = await repo.createLocation(name: 'B', now: now);
+      await repo.upsert(itemFixture(id: 'i1', locationId: a.id));
+      await repo.upsert(itemFixture(id: 'i2', locationId: b.id));
+
+      final expected = [a.id, b.id]..sort();
+      expect(repo.mostUsedLocationId(), expected.first);
+      expect(repo.mostUsedLocationId(), expected.first);
+    });
+
+    test('mostUsedLocationId ignores a place that is gone', () async {
+      final room = await repo.createLocation(name: 'Korytarz', now: now);
+      await repo.upsert(itemFixture(id: 'i1', locationId: room.id));
+      await repo.deleteLocation(room.id);
+
+      expect(repo.mostUsedLocationId(), '');
+    });
+
+    test('rootOfSelection returns the place a subtree was rooted at', () async {
+      final room = await repo.createLocation(name: 'Korytarz', now: now);
+      final shelf = await repo.createLocation(
+        name: 'Szafka',
+        parentId: room.id,
+        now: now,
+      );
+      await repo.createLocation(name: 'Półka', parentId: shelf.id, now: now);
+
+      expect(repo.rootOfSelection(repo.subtreeIds(room.id)), room.id);
+      expect(repo.rootOfSelection(repo.subtreeIds(shelf.id)), shelf.id);
+    });
+
+    test('rootOfSelection is empty for nothing, or for unknown ids', () {
+      expect(repo.rootOfSelection(const {}), '');
+      expect(repo.rootOfSelection(const {'nope'}), '');
+    });
+
+    test('rootOfSelection breaks a depth tie on id', () async {
+      final a = await repo.createLocation(name: 'A', now: now);
+      final b = await repo.createLocation(name: 'B', now: now);
+
+      final expected = [a.id, b.id]..sort();
+      expect(repo.rootOfSelection({a.id, b.id}), expected.first);
+    });
+  });
+
   group('location records and items stay separate', () {
     test('a place never shows up in the items list', () async {
       await repo.createLocation(name: 'Korytarz', now: now);

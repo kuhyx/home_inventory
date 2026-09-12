@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/item.dart';
+import 'package:home_inventory/ui/location_field.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
 import 'package:home_inventory/ui/theme.dart';
 import 'package:uuid/uuid.dart';
@@ -12,15 +13,25 @@ import 'package:uuid/uuid.dart';
 ///
 /// Cataloguing a home means entering dozens of things in one sitting, so this
 /// is tuned for repetition rather than completeness: name autofocused, a
-/// quantity that defaults to 1, the room pre-filled with the last one used,
-/// and a "Save & add another" that keeps the keyboard up. Everything else
-/// (threshold, category, notes) lives in the full form.
+/// quantity that defaults to 1, the place pre-filled, and a "Save & add
+/// another" that keeps the keyboard up. Everything else (threshold, category,
+/// notes) lives in the full form.
 class QuickAddSheet extends StatefulWidget {
   /// Creates the sheet.
-  const QuickAddSheet({required this.repository, this.now, super.key});
+  const QuickAddSheet({
+    required this.repository,
+    this.initialLocationId,
+    this.now,
+    super.key,
+  });
 
   /// Store to write into.
   final ItemRepository repository;
+
+  /// Where to file this by default — the place the item list is currently
+  /// filtered to. Standing in the hallway with the list showing the hallway,
+  /// the next thing added is overwhelmingly in the hallway.
+  final String? initialLocationId;
 
   /// Injectable clock, so tests get deterministic timestamps.
   final DateTime Function()? now;
@@ -33,27 +44,26 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _quantity = TextEditingController(text: '1');
-  final _room = TextEditingController();
-  final _container = TextEditingController();
+
+  /// Where the next item goes, empty for "nowhere".
+  late String _locationId;
 
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill with the most-used room: consecutive adds are usually in the
-    // same place, so this is right far more often than it is wrong, and it is
-    // one tap to change.
-    final rooms = widget.repository.knownRooms();
-    if (rooms.isNotEmpty) _room.text = rooms.first;
+    // What the list is filtered to first, the busiest place second:
+    // consecutive adds are usually in the same corner of the house, so this
+    // is right far more often than it is wrong, and it is one tap to change.
+    _locationId =
+        widget.initialLocationId ?? widget.repository.mostUsedLocationId();
   }
 
   @override
   void dispose() {
     _name.dispose();
     _quantity.dispose();
-    _room.dispose();
-    _container.dispose();
     super.dispose();
   }
 
@@ -71,15 +81,18 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       return false;
     }
     final at = (widget.now ?? DateTime.now)();
+    // Legacy strings alongside the id, for a device still on a build that
+    // cannot read `location_id`. See `ItemFormScreen._save`.
+    final path = widget.repository.pathOf(_locationId);
     await widget.repository.upsert(
       Item(
         id: const Uuid().v4(),
         name: _name.text.trim(),
         quantity: quantity,
         unit: '',
-        locationId: '',
-        room: _room.text.trim(),
-        container: _container.text.trim(),
+        locationId: _locationId,
+        room: path.isEmpty ? '' : path.first,
+        container: path.length > 1 ? path.skip(1).join(' › ') : '',
         category: '',
         lowStockAt: null,
         bestBefore: null,
@@ -102,8 +115,8 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   Future<void> _saveAndContinue() async {
     if (!await _save()) return;
     if (!mounted) return;
-    // Keep room and container: the next thing is almost always in the same
-    // drawer. Only the name and quantity reset.
+    // Keep the place: the next thing is almost always in the same drawer.
+    // Only the name and quantity reset.
     setState(() {
       _name.clear();
       _quantity.text = '1';
@@ -149,16 +162,11 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              SuggestField(
-                controller: _room,
-                label: 'Room',
-                suggestions: repo.knownRooms(),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              SuggestField(
-                controller: _container,
-                label: 'Where in the room?',
-                suggestions: repo.knownContainers(),
+              LocationField(
+                repository: repo,
+                locationId: _locationId,
+                now: widget.now,
+                onChanged: (id) => setState(() => _locationId = id),
               ),
               if (_error != null) ...[
                 const SizedBox(height: AppSpacing.sm),

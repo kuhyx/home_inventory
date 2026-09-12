@@ -629,26 +629,16 @@ void main() {
       );
     });
 
-    test('ranks rooms by usage, then alphabetically', () {
-      expect(repo.knownRooms(), ['Kitchen', 'Shed']);
-    });
+    test('ranks values by usage, then alphabetically', () async {
+      await repo.upsert(itemFixture(id: 'd', category: 'Food'));
 
-    test('breaks a usage tie alphabetically', () async {
-      await repo.upsert(itemFixture(id: 'd', room: 'Attic'));
-
-      expect(repo.knownRooms(), ['Kitchen', 'Attic', 'Shed']);
+      expect(repo.knownCategories(), ['Food', 'Cables']);
     });
 
     test('skips empty values', () async {
       await repo.upsert(itemFixture(id: 'e'));
 
-      expect(repo.knownRooms(), isNot(contains('')));
-    });
-
-    test('containers can be scoped to one room', () {
-      expect(repo.knownContainers(), ['Drawer', 'Crate']);
-      expect(repo.knownContainers(room: 'Shed'), ['Crate']);
-      expect(repo.knownContainers(room: 'shed'), ['Crate']);
+      expect(repo.knownCategories(), isNot(contains('')));
     });
 
     test('exposes categories and units', () {

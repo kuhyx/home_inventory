@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/screens/item_form_screen.dart';
+import 'package:home_inventory/ui/location_field.dart';
 
 import '../support/builders.dart';
 import '../support/pump.dart';
@@ -27,12 +28,11 @@ void main() {
   const name = 0;
   const quantity = 1;
   const unit = 2;
-  const room = 3;
-  const container = 4;
-  const category = 5;
-  const threshold = 6;
-  const bestBefore = 7;
-  const notes = 8;
+  // The place is a picker, not a text field, so it takes no index here.
+  const category = 3;
+  const threshold = 4;
+  const bestBefore = 5;
+  const notes = 6;
 
   Finder fieldAt(int index) => find.byType(TextFormField).at(index);
 
@@ -67,6 +67,21 @@ void main() {
   String textOf(WidgetTester tester, int index) =>
       tester.widget<TextFormField>(fieldAt(index)).controller?.text ?? '';
 
+  /// Opens the place picker and taps the row called [name].
+  Future<void> pickPlace(WidgetTester tester, String name) async {
+    await scrollTo(tester, find.byType(LocationField));
+    await tester.tap(find.byType(LocationField));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(name).last);
+    await tester.pumpAndSettle();
+  }
+
+  /// `Kitchen › Pantry`, so the form has a tree to pick out of.
+  Future<void> seedPlaces() async {
+    final kitchen = await repo.createLocation(name: 'Kitchen', now: at);
+    await repo.createLocation(name: 'Pantry', parentId: kitchen.id, now: at);
+  }
+
   Future<void> pumpForm(WidgetTester tester, {String? editId}) {
     useTallSurface(tester);
     return pumpApp(
@@ -88,6 +103,7 @@ void main() {
     });
 
     testWidgets('saves every field', (tester) async {
+      await seedPlaces();
       await pumpForm(tester);
 
       await tester.enterText(fieldAt(name), 'Flour');
@@ -96,8 +112,7 @@ void main() {
         fieldAt(unit),
         'kg',
       );
-      await tester.enterText(fieldAt(room), 'Kitchen');
-      await tester.enterText(fieldAt(container), 'Pantry');
+      await pickPlace(tester, 'Pantry');
       await tester.enterText(fieldAt(category), 'Food');
       await scrollTo(tester, fieldAt(threshold));
       await tester.enterText(fieldAt(threshold), '1');
@@ -112,6 +127,8 @@ void main() {
       expect(item.name, 'Flour');
       expect(item.quantity, 2.5);
       expect(item.unit, 'kg');
+      expect(item.locationId, repo.locationTree().single.children.single.id);
+      // The legacy strings keep being written for a device on an older build.
       expect(item.room, 'Kitchen');
       expect(item.container, 'Pantry');
       expect(item.category, 'Food');
@@ -211,9 +228,62 @@ void main() {
       expect(textOf(tester, name), 'Flour');
       expect(textOf(tester, quantity), '5');
       expect(textOf(tester, unit), 'kg');
-      expect(textOf(tester, room), 'Kitchen');
+      // No place record yet — the legacy string is what it still knows.
+      expect(find.text('Kitchen'), findsOneWidget);
       expect(textOf(tester, threshold), '2');
       expect(textOf(tester, notes), 'note');
+    });
+
+    // Q4: an item that predates the places tree gets filed for real on the
+    // next save, at the same derived id `planLocationMigration` would pick.
+    testWidgets('files a legacy room/container item on save', (tester) async {
+      await repo.upsert(
+        itemFixture(id: 'i2', name: 'Tape', room: 'Shed', container: 'Crate'),
+      );
+      await pumpForm(tester, editId: 'i2');
+
+      await save(tester);
+      await tester.pumpAndSettle();
+
+      final item = repo.item('i2')!;
+      expect(repo.pathLabel(item.locationId), 'Shed › Crate');
+      expect(item.room, 'Shed');
+      expect(item.container, 'Crate');
+    });
+
+    testWidgets('an explicit "nowhere" wins over the legacy strings', (
+      tester,
+    ) async {
+      await repo.upsert(itemFixture(id: 'i3', name: 'Tape', room: 'Shed'));
+      await pumpForm(tester, editId: 'i3');
+
+      await scrollTo(tester, find.byType(LocationField));
+      await tester.tap(find.byType(LocationField));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Not filed anywhere').last);
+      await tester.pumpAndSettle();
+      await save(tester);
+      await tester.pumpAndSettle();
+
+      final item = repo.item('i3')!;
+      expect(item.locationId, isEmpty);
+      expect(item.room, isEmpty);
+      expect(repo.listLocations(), isEmpty);
+    });
+
+    testWidgets('keeps the place when it is already filed', (tester) async {
+      await seedPlaces();
+      final pantry = repo.locationTree().single.children.single.id;
+      await repo.upsert(
+        itemFixture(id: 'i4', name: 'Rice', locationId: pantry),
+      );
+      await pumpForm(tester, editId: 'i4');
+
+      expect(find.text('Kitchen › Pantry'), findsOneWidget);
+      await save(tester);
+      await tester.pumpAndSettle();
+
+      expect(repo.item('i4')!.locationId, pantry);
     });
 
     testWidgets('keeps the original id and creation date', (tester) async {

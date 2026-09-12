@@ -124,12 +124,21 @@ class _ItemsScreenState extends State<ItemsScreen> {
     _requery();
   }
 
+  /// Adds an item, pre-filed where the list is currently pointed.
+  ///
+  /// The filter holds a whole subtree, so the place the user actually chose
+  /// is its shallowest member — recovered here rather than threaded through
+  /// the shell, so tapping a room on the Locations tab and picking one in the
+  /// filter sheet both land on the same default. Nothing filtered falls back
+  /// to the busiest place, inside the sheet.
   Future<void> _add() async {
+    final anchor = widget.repository.rootOfSelection(_filter.locationIds);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => QuickAddSheet(
         repository: widget.repository,
+        initialLocationId: anchor.isEmpty ? null : anchor,
         now: widget.now,
       ),
     );

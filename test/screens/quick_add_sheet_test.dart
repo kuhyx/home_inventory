@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/screens/quick_add_sheet.dart';
+import 'package:home_inventory/ui/location_field.dart';
 
 import '../support/builders.dart';
 import '../support/pump.dart';
@@ -20,32 +21,58 @@ void main() {
     await repo.close();
   });
 
-  Future<void> pumpSheet(WidgetTester tester) => pumpApp(
-    tester,
-    Scaffold(
-      body: QuickAddSheet(repository: repo, now: () => at),
-    ),
-  );
+  Future<void> pumpSheet(WidgetTester tester, {String? initialLocationId}) =>
+      pumpApp(
+        tester,
+        Scaffold(
+          body: QuickAddSheet(
+            repository: repo,
+            initialLocationId: initialLocationId,
+            now: () => at,
+          ),
+        ),
+      );
+
+  /// Opens the place picker and taps the row called [name].
+  Future<void> pickPlace(WidgetTester tester, String name) async {
+    await tester.tap(find.byType(LocationField));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(name).last);
+    await tester.pumpAndSettle();
+  }
+
+  /// `Kitchen › Pantry`, plus the id of the shelf.
+  Future<String> seedPlaces() async {
+    final kitchen = await repo.createLocation(name: 'Kitchen', now: at);
+    final pantry = await repo.createLocation(
+      name: 'Pantry',
+      parentId: kitchen.id,
+      now: at,
+    );
+    return pantry.id;
+  }
 
   // The done condition runs straight through this test: name, where, how
   // many, save.
   testWidgets('saves an item with its name, quantity and location', (
     tester,
   ) async {
+    final pantry = await seedPlaces();
     await pumpSheet(tester);
 
     await tester.enterText(find.byType(TextFormField).at(0), 'USB-C cable');
     await tester.enterText(find.byType(TextFormField).at(1), '4');
-    await tester.enterText(find.byType(TextFormField).at(2), 'Office');
-    await tester.enterText(find.byType(TextFormField).at(3), 'Desk drawer 2');
+    await pickPlace(tester, 'Pantry');
     await tester.tap(find.text('Save'));
     await tester.pump();
 
     final item = repo.listItems().single;
     expect(item.name, 'USB-C cable');
     expect(item.quantity, 4);
-    expect(item.room, 'Office');
-    expect(item.container, 'Desk drawer 2');
+    expect(item.locationId, pantry);
+    // Legacy strings alongside the id, for a device on an older build.
+    expect(item.room, 'Kitchen');
+    expect(item.container, 'Pantry');
     expect(item.createdAt, at);
   });
 
@@ -124,20 +151,18 @@ void main() {
   ) async {
     await pumpSheet(tester);
 
+    await seedPlaces();
     await tester.enterText(find.byType(TextFormField).at(0), 'First');
-    await tester.enterText(find.byType(TextFormField).at(2), 'Shed');
+    await pickPlace(tester, 'Pantry');
     await tester.tap(find.text('Save & add another'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(repo.listItems(), hasLength(1));
     final name = tester.widget<TextFormField>(
       find.byType(TextFormField).at(0),
     );
     expect(name.controller?.text, isEmpty);
-    final room = tester.widget<TextFormField>(
-      find.byType(TextFormField).at(2),
-    );
-    expect(room.controller?.text, 'Shed');
+    expect(find.text('Kitchen › Pantry'), findsOneWidget);
   });
 
   testWidgets('Save & add another does not save an invalid item', (
@@ -151,41 +176,103 @@ void main() {
     expect(repo.listItems(), isEmpty);
   });
 
-  testWidgets('pre-fills the most-used room', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', room: 'Kitchen'));
-    await repo.upsert(itemFixture(id: 'b', room: 'Kitchen'));
-    await repo.upsert(itemFixture(id: 'c', room: 'Shed'));
+  // Point 2: standing in the hallway with the list filtered to it, the next
+  // thing added is in the hallway.
+  testWidgets('pre-fills the place the list is filtered to', (tester) async {
+    final pantry = await seedPlaces();
+    await pumpSheet(tester, initialLocationId: pantry);
+
+    expect(find.text('Kitchen › Pantry'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Rice');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+
+    expect(repo.listItems().single.locationId, pantry);
+  });
+
+  testWidgets('falls back to the busiest place when nothing is filtered', (
+    tester,
+  ) async {
+    final pantry = await seedPlaces();
+    final kitchen = repo.locationTree().single.id;
+    await repo.upsert(itemFixture(id: 'a', locationId: kitchen));
+    await repo.upsert(itemFixture(id: 'b', locationId: kitchen));
+    await repo.upsert(itemFixture(id: 'c', locationId: pantry));
 
     await pumpSheet(tester);
 
-    final room = tester.widget<TextFormField>(
-      find.byType(TextFormField).at(2),
-    );
-    expect(room.controller?.text, 'Kitchen');
+    expect(find.text('Kitchen'), findsOneWidget);
   });
 
-  testWidgets('leaves the room blank when there is no history', (
+  testWidgets('leaves the place empty when nothing is filed yet', (
     tester,
   ) async {
     await pumpSheet(tester);
 
-    final room = tester.widget<TextFormField>(
-      find.byType(TextFormField).at(2),
-    );
-    expect(room.controller?.text, isEmpty);
+    expect(find.text('Not filed anywhere'), findsOneWidget);
   });
 
-  testWidgets('offers known rooms as tappable chips', (tester) async {
-    await repo.upsert(itemFixture(id: 'a', room: 'Kitchen'));
-    await repo.upsert(itemFixture(id: 'b', room: 'Shed'));
-
+  // Point 1: a name that is not a place yet becomes one, and says so.
+  testWidgets('creates a place typed into the picker, and says so', (
+    tester,
+  ) async {
     await pumpSheet(tester);
-    await tester.tap(find.widgetWithText(ActionChip, 'Shed'));
-    await tester.pump();
 
-    final room = tester.widget<TextFormField>(
-      find.byType(TextFormField).at(2),
+    await tester.enterText(find.byType(TextFormField).at(0), 'Broom');
+    await tester.tap(find.byType(LocationField));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'korytarz');
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Created "korytarz" as a new room'), findsOneWidget);
+    expect(find.text('korytarz'), findsWidgets);
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final item = repo.listItems().single;
+    expect(repo.pathLabel(item.locationId), 'korytarz');
+    expect(item.room, 'korytarz');
+  });
+
+  // Q2: a typed name lands inside whatever is already selected.
+  testWidgets('a typed place is created inside the selected one', (
+    tester,
+  ) async {
+    await repo.createLocation(name: 'korytarz', now: at);
+    await pumpSheet(tester);
+
+    await pickPlace(tester, 'korytarz');
+    await tester.tap(find.byType(LocationField));
+    await tester.pumpAndSettle();
+    expect(find.text('New place in korytarz'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, 'szafka z lewej');
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Created "szafka z lewej" in korytarz'),
+      findsOneWidget,
     );
-    expect(room.controller?.text, 'Shed');
+    expect(find.text('korytarz › szafka z lewej'), findsOneWidget);
+  });
+
+  // An existing place typed by name is selected, not announced as new — and
+  // the fold means the casing does not matter.
+  testWidgets('typing an existing name just picks it', (tester) async {
+    await repo.createLocation(name: 'korytarz', now: at);
+    await pumpSheet(tester);
+
+    await tester.tap(find.byType(LocationField));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Korytarz');
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Created'), findsNothing);
+    expect(repo.listLocations(), hasLength(1));
+    expect(find.text('korytarz'), findsOneWidget);
   });
 }

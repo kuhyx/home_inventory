@@ -15,10 +15,16 @@ import 'package:home_inventory/ui/theme.dart';
 @immutable
 class LocationChoice {
   /// Creates a choice for [location], or the root when null.
-  const LocationChoice(this.location);
+  const LocationChoice(this.location, {this.created = false});
 
   /// The chosen place, or null for "top level" / "not filed anywhere".
   final Location? location;
+
+  /// Whether this place was made by the picker just now.
+  ///
+  /// The caller tells the user so, which is the difference between a place
+  /// appearing because they meant it and a typo quietly becoming a new room.
+  final bool created;
 
   /// The chosen id, or empty for the root.
   String get id => location?.id ?? '';
@@ -31,12 +37,21 @@ class LocationChoice {
 ///
 /// [excludeSubtreeOf] greys out a branch — used when moving a place, since a
 /// place cannot live inside itself.
+///
+/// [allowCreate] adds a "new place" box at the bottom, filing what is typed
+/// under [createParentId] (the top level when null). Only the item forms turn
+/// it on: filing a thing is the moment a missing shelf is noticed, and making
+/// the user leave the form for the Locations tab to add it is how a room ends
+/// up as free text instead.
 Future<LocationChoice?> showLocationPicker(
   BuildContext context, {
   required ItemRepository repository,
   required String title,
   String? excludeSubtreeOf,
   String rootLabel = 'Top level',
+  bool allowCreate = false,
+  String? createParentId,
+  DateTime Function()? now,
 }) {
   final blocked = excludeSubtreeOf == null
       ? const <String>{}
@@ -44,31 +59,87 @@ Future<LocationChoice?> showLocationPicker(
   return showModalBottomSheet<LocationChoice>(
     context: context,
     isScrollControlled: true,
+    // Without this the route strips the top inset, and a tree deep enough to
+    // fill the screen puts the title under the status bar — which is exactly
+    // what a real phone showed once the create box made the sheet taller.
+    useSafeArea: true,
     builder: (context) => _LocationPickerSheet(
       repository: repository,
       title: title,
       blocked: blocked,
       rootLabel: rootLabel,
+      allowCreate: allowCreate,
+      createParentId: createParentId,
+      now: now,
     ),
   );
 }
 
-class _LocationPickerSheet extends StatelessWidget {
+class _LocationPickerSheet extends StatefulWidget {
   const _LocationPickerSheet({
     required this.repository,
     required this.title,
     required this.blocked,
     required this.rootLabel,
+    required this.allowCreate,
+    required this.createParentId,
+    required this.now,
   });
 
   final ItemRepository repository;
   final String title;
   final Set<String> blocked;
   final String rootLabel;
+  final bool allowCreate;
+  final String? createParentId;
+  final DateTime Function()? now;
+
+  @override
+  State<_LocationPickerSheet> createState() => _LocationPickerSheetState();
+}
+
+class _LocationPickerSheetState extends State<_LocationPickerSheet> {
+  final _newName = TextEditingController();
+
+  @override
+  void dispose() {
+    _newName.dispose();
+    super.dispose();
+  }
+
+  /// Resolves the typed name to a place, making it only if it is new.
+  ///
+  /// `createLocation` is idempotent on the derived id, so this cannot mint a
+  /// second "Korytarz" next to `korytarz` — the fold is part of the id. The
+  /// existence check is therefore only about what to *tell* the user.
+  Future<void> _create() async {
+    final name = _newName.text.trim();
+    if (name.isEmpty) return;
+    final parentId = widget.createParentId;
+    final existed = widget.repository.hasChildNamed(parentId, name);
+    final location = await widget.repository.createLocation(
+      name: name,
+      parentId: parentId,
+      now: widget.now?.call(),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop(LocationChoice(location, created: !existed));
+  }
+
+  /// Where a typed name would land, spelled out rather than implied.
+  String get _createLabel {
+    final parentId = widget.createParentId;
+    if (parentId == null || parentId.isEmpty) return 'New room';
+    return 'New place in ${widget.repository.pathLabel(parentId)}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final repository = widget.repository;
+    final title = widget.title;
+    final blocked = widget.blocked;
+    final rootLabel = widget.rootLabel;
     final rows = <LocationTreeNode>[];
     void walk(List<LocationTreeNode> nodes) {
       for (final node in nodes) {
@@ -81,7 +152,13 @@ class _LocationPickerSheet extends StatelessWidget {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: EdgeInsets.only(
+          left: AppSpacing.md,
+          right: AppSpacing.md,
+          top: AppSpacing.md,
+          // Without this the create box sits under the keyboard it opened.
+          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.md,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -100,7 +177,9 @@ class _LocationPickerSheet extends StatelessWidget {
                   ? Padding(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       child: Text(
-                        'No places yet. Add one on the Locations tab.',
+                        widget.allowCreate
+                            ? 'No places yet. Type a name below to make one.'
+                            : 'No places yet. Add one on the Locations tab.',
                         style: theme.textTheme.bodyMedium,
                       ),
                     )
@@ -126,6 +205,22 @@ class _LocationPickerSheet extends StatelessWidget {
                       },
                     ),
             ),
+            if (widget.allowCreate) ...[
+              const Divider(),
+              TextField(
+                controller: _newName,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: _createLabel,
+                  suffixIcon: IconButton(
+                    onPressed: _create,
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Create it',
+                  ),
+                ),
+                onSubmitted: (_) => _create(),
+              ),
+            ],
           ],
         ),
       ),

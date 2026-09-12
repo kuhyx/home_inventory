@@ -370,23 +370,10 @@ class ItemRepository {
   // Autocomplete sources
   // ---------------------------------------------------------------------
 
-  /// Rooms already in use, most-used first then alphabetically.
-  ///
-  /// Ordering by usage is what makes free-text locations workable: the room
-  /// you file things in most is the first suggestion, so the common case is
-  /// a tap rather than typing — which is also what keeps casing consistent.
-  List<String> knownRooms() => _rankedValues((item) => item.room);
-
-  /// Containers already in use, optionally narrowed to one [room].
-  List<String> knownContainers({String? room}) {
-    final wanted = room?.toLowerCase();
-    return _rankedValues(
-      (item) => item.container,
-      where: wanted == null
-          ? null
-          : (item) => item.room.toLowerCase() == wanted,
-    );
-  }
+  // Rooms and containers had ranked-value sources here too, feeding the
+  // free-text fields on the two item forms. Those fields are gone: places are
+  // records now, picked from the tree, so ranking the legacy strings would
+  // only offer values nothing writes any more.
 
   /// Categories already in use, most-used first.
   List<String> knownCategories() => _rankedValues((item) => item.category);
@@ -630,6 +617,54 @@ class ItemRepository {
   /// How many live items are filed at exactly [locationId].
   int itemCountAt(String locationId) =>
       _liveItems().where((i) => i.locationId == locationId).length;
+
+  /// The place most things are filed in, or empty when nothing is filed.
+  ///
+  /// The quick-add default. It replaces `knownRooms().first`, which read the
+  /// legacy `room` string: now that the forms file items as records, that
+  /// string stops being written and the old default would have decayed to
+  /// nothing as the pre-places items aged out.
+  String mostUsedLocationId() {
+    final counts = <String, int>{};
+    for (final item in _liveItems()) {
+      if (item.locationId.isEmpty) continue;
+      if (location(item.locationId) == null) continue;
+      counts.update(item.locationId, (n) => n + 1, ifAbsent: () => 1);
+    }
+    if (counts.isEmpty) return '';
+    final ranked = counts.keys.toList()
+      ..sort((a, b) {
+        final byCount = counts[b]!.compareTo(counts[a]!);
+        // Ties break on id so the default cannot flip between two equally
+        // busy shelves from one rebuild to the next.
+        return byCount != 0 ? byCount : a.compareTo(b);
+      });
+    return ranked.first;
+  }
+
+  /// The place a subtree selection was rooted at — the shallowest of [ids].
+  ///
+  /// [subtreeIds] returns an unordered set, so "which place did the user
+  /// actually tap" is not recoverable from a filter directly. It is always
+  /// the shallowest member; ties break on id, and an id with no live record
+  /// is skipped. Empty when [ids] names nothing that exists.
+  String rootOfSelection(Set<String> ids) {
+    var best = '';
+    var bestDepth = 0;
+    for (final id in ids) {
+      final depth = pathOf(id).length;
+      if (depth == 0) continue;
+      final better =
+          best.isEmpty ||
+          depth < bestDepth ||
+          (depth == bestDepth && id.compareTo(best) < 0);
+      if (better) {
+        best = id;
+        bestDepth = depth;
+      }
+    }
+    return best;
+  }
 
   static int _bySortKeyThenName(LocationTreeNode a, LocationTreeNode b) {
     final bySort = a.location.sortKey.compareTo(b.location.sortKey);
@@ -1031,13 +1066,9 @@ class ItemRepository {
       .where((r) => !r.deleted && isLocationRecord(r))
       .map(_toLocation);
 
-  List<String> _rankedValues(
-    String Function(Item) select, {
-    bool Function(Item)? where,
-  }) {
+  List<String> _rankedValues(String Function(Item) select) {
     final counts = <String, int>{};
     for (final item in _liveItems()) {
-      if (where != null && !where(item)) continue;
       final value = select(item);
       if (value.isEmpty) continue;
       counts.update(value, (n) => n + 1, ifAbsent: () => 1);

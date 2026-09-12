@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/item.dart';
+import 'package:home_inventory/ui/location_field.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
 import 'package:home_inventory/ui/theme.dart';
 import 'package:uuid/uuid.dart';
@@ -36,14 +37,23 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
   late final TextEditingController _name;
   late final TextEditingController _quantity;
   late final TextEditingController _unit;
-  late final TextEditingController _room;
-  late final TextEditingController _container;
   late final TextEditingController _category;
   late final TextEditingController _lowStockAt;
   late final TextEditingController _bestBefore;
   late final TextEditingController _notes;
   late bool _wanted;
   late bool _sellable;
+
+  /// The place this item is filed under, empty for "nowhere".
+  late String _locationId;
+
+  /// Whether the user chose the place themselves in this session.
+  ///
+  /// Until they do, an item that predates the places tree is filed from its
+  /// own legacy `room`/`container` strings on save. Afterwards their choice
+  /// wins — including the explicit "not filed anywhere", which is otherwise
+  /// indistinguishable from "untouched".
+  bool _locationPicked = false;
 
   Item? get _existing => widget.item;
 
@@ -56,8 +66,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
       text: item == null ? '1' : formatQuantity(item.quantity),
     );
     _unit = TextEditingController(text: item?.unit ?? '');
-    _room = TextEditingController(text: item?.room ?? '');
-    _container = TextEditingController(text: item?.container ?? '');
+    _locationId = item?.locationId ?? '';
     _category = TextEditingController(text: item?.category ?? '');
     _lowStockAt = TextEditingController(
       text: item?.lowStockAt == null ? '' : formatQuantity(item!.lowStockAt!),
@@ -73,8 +82,6 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     _name.dispose();
     _quantity.dispose();
     _unit.dispose();
-    _room.dispose();
-    _container.dispose();
     _category.dispose();
     _lowStockAt.dispose();
     _bestBefore.dispose();
@@ -145,16 +152,19 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
         ? null
         : _parse(_lowStockAt.text);
     final existing = _existing;
+    final locationId = await _resolveLocationId(at);
+    // The legacy strings stay written for as long as a device on an older
+    // build might read them: that build knows nothing of `location_id`, and
+    // an empty `room` there reads as an item that lost its place.
+    final path = widget.repository.pathOf(locationId);
     final item = Item(
       id: existing?.id ?? const Uuid().v4(),
       name: _name.text.trim(),
       quantity: quantity,
       unit: _unit.text.trim(),
-      // Kept as-is: this form still edits the legacy strings, and the
-      // migration folds them into a place record on the next open.
-      locationId: existing?.locationId ?? '',
-      room: _room.text.trim(),
-      container: _container.text.trim(),
+      locationId: locationId,
+      room: path.isEmpty ? '' : path.first,
+      container: path.length > 1 ? path.skip(1).join(' › ') : '',
       category: _category.text.trim(),
       lowStockAt: threshold,
       bestBefore: _parseDate(_bestBefore.text),
@@ -170,6 +180,30 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     await widget.repository.upsert(item);
     if (!mounted) return;
     Navigator.of(context).pop(item);
+  }
+
+  /// The place to file this item under, creating the records an item that
+  /// predates the places tree still only names as strings.
+  ///
+  /// The ids are the same ones `planLocationMigration` would derive —
+  /// `createLocation` is a pure function of (parent, folded name) — so filing
+  /// it here early converges with a device that gets there via the migration
+  /// instead. Doing it on save rather than on open keeps the form from
+  /// writing to the log just because it was looked at.
+  Future<String> _resolveLocationId(DateTime at) async {
+    if (_locationPicked || _locationId.isNotEmpty) return _locationId;
+    final room = _existing?.room.trim() ?? '';
+    if (room.isEmpty) return '';
+    final repo = widget.repository;
+    final roomPlace = await repo.createLocation(name: room, now: at);
+    final container = _existing?.container.trim() ?? '';
+    if (container.isEmpty) return roomPlace.id;
+    final inner = await repo.createLocation(
+      name: container,
+      parentId: roomPlace.id,
+      now: at,
+    );
+    return inner.id;
   }
 
   Future<void> _delete() async {
@@ -232,16 +266,19 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
               textCapitalization: TextCapitalization.none,
             ),
             const SizedBox(height: AppSpacing.md),
-            SuggestField(
-              controller: _room,
-              label: 'Room',
-              suggestions: repo.knownRooms(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            SuggestField(
-              controller: _container,
-              label: 'Where in the room?',
-              suggestions: repo.knownContainers(),
+            LocationField(
+              repository: repo,
+              locationId: _locationId,
+              // A pre-places item shows its old strings until it is filed for
+              // real, which happens on the next save either way.
+              fallbackLabel: _locationPicked
+                  ? ''
+                  : (_existing?.legacyLocation ?? ''),
+              now: widget.now,
+              onChanged: (id) => setState(() {
+                _locationId = id;
+                _locationPicked = true;
+              }),
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(

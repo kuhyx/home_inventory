@@ -23,8 +23,15 @@ void main() {
     await repo.close();
   });
 
-  Future<void> pumpList(WidgetTester tester) async {
-    await pumpApp(tester, ItemsScreen(repository: repo, now: () => at));
+  Future<void> pumpList(WidgetTester tester, {ItemFilter? requested}) async {
+    await pumpApp(
+      tester,
+      ItemsScreen(
+        repository: repo,
+        now: () => at,
+        requestedFilter: requested,
+      ),
+    );
     await tester.pump();
   }
 
@@ -118,6 +125,29 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Add an item'), findsOneWidget);
+  });
+
+  // Point 2: the list is already pointed at a place, so the thing being added
+  // is almost certainly in it. The filter holds the whole subtree; the default
+  // is the place it was rooted at, not one of its shelves.
+  testWidgets('the add sheet defaults to the filtered place', (tester) async {
+    final room = await repo.createLocation(name: 'korytarz', now: at);
+    await repo.createLocation(name: 'szafka', parentId: room.id, now: at);
+    await pumpList(
+      tester,
+      requested: ItemFilter(locationIds: repo.subtreeIds(room.id)),
+    );
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('korytarz'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Buty');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(repo.listItems().single.locationId, room.id);
   });
 
   testWidgets('opens an item when its row is tapped', (tester) async {

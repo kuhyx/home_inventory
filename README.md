@@ -120,6 +120,17 @@ write instead of a rewrite of every item filed there. An item carries a
 device on an older build keeps showing places during the rollout, and get
 deleted once every device is updated.
 
+**Both item forms file an item directly, picking off the tree.** There is no
+free-text "Room" box and no separate "Where in the room?" — a place at any
+depth is one field, because the tree already expresses "which shelf in which
+cupboard". Typing a name the tree does not have creates it, under whatever is
+selected, and says where it landed; the id is derived, so typing `Korytarz`
+next to an existing `korytarz` picks the existing one rather than forking it.
+Adding from a filtered list defaults to the place that list is pointed at —
+the shallowest id in the filter's subtree — and falls back to the busiest
+place otherwise. Opening an item that predates the tree files it for real on
+the next save, at the id `planLocationMigration` would have derived anyway.
+
 **Ids are derived, never minted.** `derivedLocationId(parentId, name)` is a
 uuid v5 over a frozen namespace, so two devices that fold `room: 'Kitchen'`
 into a record — or that both have the user type "Garage" while offline —
