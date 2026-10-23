@@ -40,7 +40,7 @@ dependencies:
   # Dart so it keeps working on Linux desktop and headless.
   google_sign_in: 7.2.0
   http: 1.6.0
-  idb_shim: 2.9.10
+  idb_shim: 2.10.1+1
   # For @immutable on the pure-Dart models. Deliberately not
   # `package:flutter/foundation.dart`, which exports the same annotation: the
   # models are reachable from `tool/sync_smoke.dart`, which runs under plain
@@ -49,7 +49,7 @@ dependencies:
   path: 1.9.1
   path_provider: 2.1.6
   share_plus: 13.3.1
-  shared_preferences: 2.5.5
+  shared_preferences: 2.5.6
   # Shared "Sync settings" screen (Firebase + Backup), identical in shape
   # across every kuhy app that syncs. GitHub mirror stays app-local (see
   # lib/screens/github_mirror_screen.dart) since here it also triggers a real
