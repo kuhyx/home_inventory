@@ -83,7 +83,7 @@ install_desktop_entry() {
     cat > "$DESKTOP_DIR/$ICON_NAME.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Home Inventory
+Name=Inventory
 Comment=Offline-first, CRDT-synced household inventory
 Exec=$LAUNCH_CMD
 Icon=$ICON_NAME
