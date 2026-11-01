@@ -21,7 +21,13 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly REPO_DIR
 
+# shellcheck disable=SC2034  # read by ci_mirror_shards.sh
+readonly GATE_SHARDS=4
+
 log() { printf '==> %s\n' "$1"; }
+
+# shellcheck source=/dev/null
+source "$REPO_DIR/scripts/ci_mirror_shards.sh"
 
 # Echoes the path of the lcov report, or exits when the test run never made it.
 coverage_report() {
@@ -104,35 +110,73 @@ enforce_full_coverage() {
     fi
 }
 
-main() {
-    cd "$REPO_DIR"
-
-    log "flutter clean"
-    flutter clean
-
+ensure_deps() {
     log "flutter pub get"
     flutter pub get
+}
 
+phase_setup() {
+    log "flutter clean"
+    flutter clean
+    ensure_deps
+}
+
+phase_analyze() {
+    ensure_deps
     log "file-length gate"
     bash scripts/check_file_length.sh --all
 
     log "flutter analyze --fatal-infos --fatal-warnings"
     flutter analyze --fatal-infos --fatal-warnings
+}
 
+phase_format() {
     log "dart format --set-exit-if-changed"
     dart format --set-exit-if-changed lib/ test/ tool/ bin/
+}
 
-    log "flutter test --coverage"
-    flutter test --coverage
-
+phase_coverage_gate() {
     log "coverage gate"
     enforce_coverage_completeness
     enforce_full_coverage
+}
 
+phase_build() {
+    ensure_deps
     log "flutter build web --release"
     flutter build web --release
+}
 
-    echo "CI mirror passed."
+main() {
+    cd "$REPO_DIR"
+
+    case "${1:-all}" in
+        all)
+            phase_setup
+            phase_analyze
+            phase_format
+            log "flutter test --coverage"
+            flutter test --coverage
+            phase_coverage_gate
+            phase_build
+            ;;
+        setup) phase_setup ;;
+        analyze) phase_analyze ;;
+        format) phase_format ;;
+        coverage)
+            [[ "${2:-}" == "--shard" ]] || die "usage: ci_mirror.sh coverage --shard I/N"
+            ensure_deps
+            coverage_shard "${3:-}"
+            ;;
+        coverage-merge)
+            coverage_merge
+            phase_coverage_gate
+            ;;
+        build) phase_build ;;
+        *) die "unknown phase '$1' (all|setup|analyze|format|coverage --shard I/N|coverage-merge|build)" ;;
+    esac
+
+    echo "CI mirror ${1:-all} passed."
 }
 
 main "$@"

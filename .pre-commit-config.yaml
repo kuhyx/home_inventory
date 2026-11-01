@@ -41,9 +41,75 @@ repos:
       # Pre-push rather than pre-commit: a full clean build plus the coverage
       # and web-build gates takes minutes, which is a reasonable price once per
       # push and an unreasonable one per commit.
-      - id: ci-mirror
-        name: CI mirror (clean, analyze, format, coverage, web build)
-        entry: bash scripts/ci_mirror.sh
+      # Split into <60 s steps, run in this order.
+      - id: ci-mirror-setup
+        name: CI mirror 1 (clean, pub get)
+        entry: bash scripts/ci_mirror.sh setup
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      - id: ci-mirror-analyze
+        name: CI mirror 2 (file length, analyze)
+        entry: bash scripts/ci_mirror.sh analyze
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      - id: ci-mirror-format
+        name: CI mirror 3 (format)
+        entry: bash scripts/ci_mirror.sh format
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      - id: ci-mirror-cov-1
+        name: CI mirror 4 (tests, shard 1/4)
+        entry: bash scripts/ci_mirror.sh coverage --shard 0/4
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      - id: ci-mirror-cov-2
+        name: CI mirror 5 (tests, shard 2/4)
+        entry: bash scripts/ci_mirror.sh coverage --shard 1/4
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      - id: ci-mirror-cov-3
+        name: CI mirror 6 (tests, shard 3/4)
+        entry: bash scripts/ci_mirror.sh coverage --shard 2/4
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      - id: ci-mirror-cov-4
+        name: CI mirror 7 (tests, shard 4/4)
+        entry: bash scripts/ci_mirror.sh coverage --shard 3/4
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      # Same 100% bar and every-lib-file guard, on the union of the shards.
+      - id: ci-mirror-cov-merge
+        name: CI mirror 8 (coverage 100%, union of shards)
+        entry: bash scripts/ci_mirror.sh coverage-merge
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+        stages: [manual]
+      - id: ci-mirror-build
+        name: CI mirror 9 (web build)
+        entry: bash scripts/ci_mirror.sh build
         language: system
         pass_filenames: false
         always_run: true
