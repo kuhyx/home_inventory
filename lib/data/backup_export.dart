@@ -1,14 +1,22 @@
-/// Platform entry point for the explicit "Export inventory" action.
+/// The explicit "Export inventory" action.
 ///
-/// Conditional export because `dart:io` is unusable in a browser, and because
-/// the three hosts genuinely disagree about what "save a file" means: Android
-/// has no save dialog at all (`file_selector_android` implements only the open
-/// side), a `dart:io` desktop gets a real save dialog, and the browser can only
-/// hand the bytes to its download manager.
-///
-/// Importing is *not* here: `openFile` is implemented on every platform, so it
-/// needs no seam.
+/// File plumbing (system Save-as on Android, a save dialog on desktop, a
+/// browser download on web) lives in `data_transfer_flutter`; this file only
+/// decides the file name and the status line.
 library;
 
-export 'backup_export_io.dart'
-    if (dart.library.js_interop) 'backup_export_web.dart';
+import 'package:data_transfer_flutter/data_transfer_flutter.dart';
+
+/// Suggested file name for a manual backup, so the user recognises the file
+/// when importing it back.
+const backupFileName = 'home-inventory-backup.json';
+
+/// Saves [json] where the user chooses, and returns a status line.
+Future<String> exportBackup(String json, int itemCount) async {
+  // '1 items' has been shipped and caught once already (commit 6d0df13, the
+  // summary strip). Every user-facing count in this app goes through a plural
+  // check.
+  final label = itemCount == 1 ? 'item' : 'items';
+  final saved = await exportJsonText(fileName: backupFileName, text: json);
+  return saved ? 'Exported $itemCount $label.' : 'Export cancelled.';
+}

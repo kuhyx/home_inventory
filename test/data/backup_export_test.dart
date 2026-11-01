@@ -28,8 +28,7 @@ void main() {
     final message = await exportBackup('{"a":1}', 3);
 
     expect(File(path).readAsStringSync(), '{"a":1}');
-    expect(message, contains('3 items'));
-    expect(message, contains(path));
+    expect(message, 'Exported 3 items.');
   });
 
   // '1 items' shipped once already (commit 6d0df13, the summary strip), so
@@ -40,8 +39,7 @@ void main() {
 
     final message = await exportBackup('{}', 1);
 
-    expect(message, startsWith('Exported 1 item to'));
-    expect(message, contains(path));
+    expect(message, 'Exported 1 item.');
   });
 
   test('suggests a recognisable file name', () async {

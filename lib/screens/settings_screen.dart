@@ -9,7 +9,7 @@
 library;
 
 import 'package:crdt_sync/crdt_sync.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:data_transfer_flutter/data_transfer_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/backup_export.dart';
 import 'package:home_inventory/data/item_repository.dart';
@@ -100,10 +100,9 @@ class SettingsScreen extends StatelessWidget {
   /// as one, a wrong-shape file would escape as an unhandled error in a
   /// button callback instead of a status message.
   Future<void> _import() async {
-    final file = await openFile(acceptedTypeGroups: const [backupTypeGroup]);
-    if (file == null) return; // cancelled: BackupSlot has no "cancelled"
+    final text = await pickJsonText();
+    if (text == null) return; // cancelled: BackupSlot has no "cancelled"
     // outcome, so this matches every other app's import wiring.
-    final text = await file.readAsString();
     try {
       await repository.importJson(text);
     } on Object catch (error) {
