@@ -82,4 +82,9 @@ List<String> browserArgs(String profileDir) => [
   // a browser icon instead of this app's.
   '--class=home-inventory',
   '--no-first-run',
+  // The distro wrapper appends ~/.config/chromium-flags.conf to every launch,
+  // which here carries `--load-extension` for Claude in Chrome. Logged out in
+  // this profile, it opened a claude.ai login tab in a second, normal browser
+  // window on every start. This flag also drops command-line extensions.
+  '--disable-extensions',
 ];

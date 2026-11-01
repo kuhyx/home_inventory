@@ -107,5 +107,12 @@ void main() {
       expect(args, contains('--class=home-inventory'));
       expect(args, contains('--no-first-run'));
     });
+
+    test('loads no extension, so none can open a second browser window', () {
+      expect(
+        browserArgs('/home/kuhy/profile'),
+        contains('--disable-extensions'),
+      );
+    });
   });
 }
