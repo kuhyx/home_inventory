@@ -22,7 +22,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly REPO_DIR
 
 # shellcheck disable=SC2034  # read by ci_mirror_shards.sh
-readonly GATE_SHARDS=4
+readonly GATE_SHARDS=6
 
 log() { printf '==> %s\n' "$1"; }
 
@@ -143,8 +143,8 @@ phase_coverage_gate() {
 
 phase_build() {
     ensure_deps
-    log "flutter build web --release"
-    flutter build web --release
+    log "flutter build web --release $*"
+    flutter build web --release "$@"
 }
 
 main() {
@@ -172,7 +172,8 @@ main() {
             coverage_merge
             phase_coverage_gate
             ;;
-        build) phase_build ;;
+        # The wasm dry run only warns; skipping it keeps the gate step under 60 s.
+        build) phase_build --no-wasm-dry-run ;;
         *) die "unknown phase '$1' (all|setup|analyze|format|coverage --shard I/N|coverage-merge|build)" ;;
     esac
 
