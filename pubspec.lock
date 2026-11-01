@@ -127,7 +127,7 @@ packages:
     description:
       path: data_transfer_flutter
       ref: "data_transfer_flutter-v0.2.0"
-      resolved-ref: "f49cff48fdff57f00696a8a0edbf0593da69c380"
+      resolved-ref: bbb7f0f0c0cd891518418472955c8a2ac6cbca4d
       url: "https://github.com/kuhyx/utils"
     source: git
     version: "0.2.0"
