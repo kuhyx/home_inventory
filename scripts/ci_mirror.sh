@@ -45,12 +45,10 @@ coverage_report() {
 # excludes half the platform layer is a gate that fails open. Every absence has
 # to be listed here, on purpose, or the build stops.
 declare -rA COVERAGE_EXEMPT=(
-    [lib/data/backup_export.dart]="conditional export only; no executable lines"
     [lib/data/repository_factory.dart]="conditional export only; no executable lines"
     [lib/sync/sync_state_factory.dart]="conditional export only; no executable lines"
     [lib/sync/desktop_wrapper.dart]="two consts; no executable lines (values asserted in desktop_backup_client_test.dart)"
     [lib/data/repository_factory_web.dart]="browser-only: imports idb_browser, which pulls dart:js_interop and will not compile into the VM test binary"
-    [lib/data/backup_export_web.dart]="browser-only: XFile.saveTo('') means 'click a synthetic anchor' on web, while cross_file under the VM writes to the literal path '' and throws"
     [lib/sync/google_platform.dart]="conditional export only; no executable lines"
     [lib/sync/google_platform_web.dart]="browser-only: the io/web split always resolves to google_platform_io.dart under the VM test binary, so this file's own line is unreachable from any VM test"
 )
