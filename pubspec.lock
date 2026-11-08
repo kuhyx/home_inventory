@@ -93,11 +93,11 @@ packages:
     dependency: "direct main"
     description:
       path: crdt_sync_dart
-      ref: "crdt_sync_dart-v0.11.3"
-      resolved-ref: a2e7334dfec5131170a084510d70361d53dc40bc
+      ref: "crdt_sync_dart-v0.12.0"
+      resolved-ref: "59b33949e4a130bb76c77e7434ddf4bbf8cde3a3"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.11.3"
+    version: "0.12.0"
   cross_file:
     dependency: transitive
     description:
@@ -400,10 +400,10 @@ packages:
     dependency: "direct main"
     description:
       name: idb_shim
-      sha256: "923c92ef88569de4ec1b257b6a6d10360dc3407179f61d0c73329701a7d7b12e"
+      sha256: "60965b556624f7018ec26205283e32670bc78c6fe1388d4b90bdfe6b2311b87b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.11.1"
+    version: "2.11.2"
   image:
     dependency: transitive
     description:
@@ -624,10 +624,10 @@ packages:
     dependency: transitive
     description:
       name: sembast
-      sha256: a58b26925e23071cf0f4754d8449aabe829e9a9930a872fb18e6ae4c2c88e025
+      sha256: "35775a26edbdf0d891bab304929a712e103c9d9a6e2fb5ebbd8437bb3139615a"
       url: "https://pub.dev"
     source: hosted
-    version: "3.8.9+1"
+    version: "3.10.0"
   share_plus:
     dependency: transitive
     description:
@@ -741,11 +741,11 @@ packages:
     dependency: "direct main"
     description:
       path: sync_settings_ui
-      ref: "sync_settings_ui-v0.5.2"
-      resolved-ref: "648bde44b1756485d95ca3c3a8714cd2015d5be4"
+      ref: "sync_settings_ui-v0.6.0"
+      resolved-ref: "3121639732fac85f7e25f3df4e081a228d63aa74"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.5.2"
+    version: "0.6.0"
   synchronized:
     dependency: transitive
     description:
