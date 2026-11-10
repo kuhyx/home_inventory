@@ -71,8 +71,11 @@ class GitHubMirrorForm extends StatelessWidget {
     final palette = theme.extension<AppStatusColors>()!;
     final device = pending;
     return Scaffold(
+      // The glyph sits in the title, not `leading`, so the pushed route
+      // keeps its back arrow (web and the Chrome --app window have no
+      // system back).
       appBar: AppBar(
-        leading: const Icon(
+        title: const Icon(
           Icons.cloud_sync_outlined,
           semanticLabel: 'Advanced sync (GitHub)',
         ),

@@ -86,6 +86,9 @@ void main() {
         find.byType(GitHubMirrorScreen),
       );
       expect(screen.repository, repo);
+      // Web and the Chrome --app window have no system back: the pushed
+      // route must keep its own arrow.
+      expect(find.byType(BackButton), findsOneWidget);
     },
   );
 
