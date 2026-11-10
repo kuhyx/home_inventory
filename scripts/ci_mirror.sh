@@ -48,6 +48,7 @@ declare -rA COVERAGE_EXEMPT=(
     [lib/data/repository_factory.dart]="conditional export only; no executable lines"
     [lib/sync/sync_state_factory.dart]="conditional export only; no executable lines"
     [lib/sync/desktop_wrapper.dart]="two consts; no executable lines (values asserted in desktop_backup_client_test.dart)"
+    [lib/ui/field_error.dart]="one const; no executable lines (value asserted in field_error_test.dart)"
     [lib/data/repository_factory_web.dart]="browser-only: imports idb_browser, which pulls dart:js_interop and will not compile into the VM test binary"
 )
 
