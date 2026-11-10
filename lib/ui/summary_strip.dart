@@ -11,7 +11,7 @@ import 'package:home_inventory/ui/theme.dart';
 IconData sortGlyph(ItemSort sort) => switch (sort) {
   ItemSort.updatedDesc => Icons.update,
   ItemSort.nameAsc => Icons.sort_by_alpha,
-  ItemSort.createdDesc => Icons.fiber_new_outlined,
+  ItemSort.createdDesc => Icons.new_releases_outlined,
   ItemSort.quantityAsc => Icons.format_list_numbered,
   ItemSort.locationAsc => Icons.place_outlined,
   ItemSort.lowStockFirst => Icons.battery_2_bar,
