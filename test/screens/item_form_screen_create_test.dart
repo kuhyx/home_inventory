@@ -6,6 +6,7 @@ import 'package:home_inventory/screens/item_form_screen.dart';
 import 'package:home_inventory/ui/location_field.dart';
 
 import '../support/builders.dart';
+import '../support/field_state.dart';
 import '../support/pump.dart';
 
 void main() {
@@ -98,7 +99,7 @@ void main() {
     testWidgets('shows the create title and no delete action', (tester) async {
       await pumpForm(tester);
 
-      expect(find.text('New item'), findsOneWidget);
+      expect(find.bySemanticsLabel('New item'), findsOneWidget);
       expect(find.byIcon(Icons.delete_outline), findsNothing);
     });
 
@@ -152,7 +153,7 @@ void main() {
       await save(tester);
       await tester.pump();
 
-      expect(find.text('Give it a name'), findsOneWidget);
+      expect(hasFieldError(tester, fieldAt(name)), isTrue);
       expect(repo.listItems(), isEmpty);
     });
 
@@ -164,7 +165,7 @@ void main() {
       await save(tester);
       await tester.pump();
 
-      expect(find.text('Enter a number'), findsOneWidget);
+      expect(hasFieldError(tester, fieldAt(quantity)), isTrue);
     });
 
     testWidgets('rejects non-numbers and negatives', (tester) async {
@@ -174,12 +175,12 @@ void main() {
       await tester.enterText(fieldAt(quantity), 'lots');
       await save(tester);
       await tester.pump();
-      expect(find.text('Not a number'), findsOneWidget);
+      expect(hasFieldError(tester, fieldAt(quantity)), isTrue);
 
       await tester.enterText(fieldAt(quantity), '-1');
       await save(tester);
       await tester.pump();
-      expect(find.text('Cannot be negative'), findsOneWidget);
+      expect(hasFieldError(tester, fieldAt(quantity)), isTrue);
     });
 
     testWidgets('validates the threshold too, but allows blank', (
@@ -192,7 +193,7 @@ void main() {
       await save(tester);
       await tester.pump();
 
-      expect(find.text('Not a number'), findsOneWidget);
+      expect(hasFieldError(tester, fieldAt(threshold)), isTrue);
     });
   });
 }

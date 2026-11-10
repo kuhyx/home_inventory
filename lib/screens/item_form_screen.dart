@@ -6,6 +6,7 @@ import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/legacy_location_filing.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/ui/best_before_field.dart';
+import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/item_flag_switches.dart';
 import 'package:home_inventory/ui/location_field.dart';
 import 'package:home_inventory/ui/number_input.dart';
@@ -150,7 +151,9 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     final repo = widget.repository;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_existing == null ? 'New item' : 'Edit item'),
+        title: _existing == null
+            ? const Icon(Icons.add_box_outlined, semanticLabel: 'New item')
+            : const Icon(Icons.edit_outlined, semanticLabel: 'Edit item'),
         actions: [
           if (_existing != null)
             IconButton(
@@ -170,7 +173,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
               controller: _name,
               semanticLabel: 'Name',
               validator: (value) =>
-                  (value ?? '').trim().isEmpty ? 'Give it a name' : null,
+                  (value ?? '').trim().isEmpty ? invalidField : null,
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(

@@ -3,9 +3,24 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:home_inventory/models/freshness.dart';
+import 'package:home_inventory/ui/status_pill.dart';
 import 'package:home_inventory/ui/theme.dart';
 
-/// A small pill naming how close an item is to its date, or nothing at all
+/// Glyph for each [FreshnessState], shared by the badges and the filter chips.
+IconData freshnessGlyph(FreshnessState state) => switch (state) {
+  FreshnessState.fresh => Icons.eco_outlined,
+  FreshnessState.dueSoon => Icons.schedule,
+  FreshnessState.expired => Icons.event_busy,
+};
+
+/// Spoken-only name of each [FreshnessState].
+String freshnessSpoken(FreshnessState state) => switch (state) {
+  FreshnessState.fresh => 'Fresh',
+  FreshnessState.dueSoon => 'Due soon',
+  FreshnessState.expired => 'Expired',
+};
+
+/// A small pill showing how close an item is to its date, or nothing at all
 /// while it is still [FreshnessState.fresh].
 ///
 /// Silent-when-fine, exactly like `StockBadge`: a date pill on every row
@@ -27,21 +42,12 @@ class FreshnessBadge extends StatelessWidget {
     // Two-way, not an exhaustive switch: `fresh` already returned above, so a
     // third arm would be dead code the coverage gate could never satisfy.
     final isExpired = freshness.state == FreshnessState.expired;
-    final color = isExpired ? theme.colorScheme.error : status.warning;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Text(
-        freshness.label,
-        style: theme.textTheme.labelSmall?.copyWith(color: color),
-      ),
+    return StatusPill(
+      icon: freshnessGlyph(freshness.state),
+      color: isExpired ? theme.colorScheme.error : status.warning,
+      semanticLabel: freshness.label,
+      // Days left as a bare number: the clock glyph already says "days".
+      value: isExpired ? null : '${freshness.daysLeft}',
     );
   }
 }

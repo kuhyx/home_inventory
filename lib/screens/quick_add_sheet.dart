@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/legacy_location_filing.dart';
 import 'package:home_inventory/models/item.dart';
+import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/location_field.dart';
+import 'package:home_inventory/ui/number_input.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
 import 'package:home_inventory/ui/theme.dart';
 import 'package:uuid/uuid.dart';
@@ -49,8 +51,6 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   /// Where the next item goes, empty for "nowhere".
   late String _locationId;
 
-  String? _error;
-
   @override
   void initState() {
     super.initState();
@@ -77,10 +77,8 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   Future<bool> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return false;
     final quantity = _parsedQuantity();
-    if (quantity == null || quantity < 0) {
-      setState(() => _error = 'Quantity must be a number');
-      return false;
-    }
+    // The quantity validator already refused these; this only narrows.
+    if (quantity == null || quantity < 0) return false;
     final at = (widget.now ?? DateTime.now)();
     final legacy = legacyStringsFor(widget.repository.pathOf(_locationId));
     await widget.repository.upsert(
@@ -119,7 +117,6 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
     setState(() {
       _name.clear();
       _quantity.text = '1';
-      _error = null;
     });
   }
 
@@ -140,18 +137,13 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Add an item',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: AppSpacing.md),
               SuggestField(
                 key: const Key('quick_add_name'),
                 controller: _name,
                 semanticLabel: 'What is it?',
                 autofocus: true,
                 validator: (value) =>
-                    (value ?? '').trim().isEmpty ? 'Give it a name' : null,
+                    (value ?? '').trim().isEmpty ? invalidField : null,
               ),
               const SizedBox(height: AppSpacing.md),
               SuggestField(
@@ -159,6 +151,9 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 controller: _quantity,
                 semanticLabel: 'How many?',
                 icon: Icons.numbers,
+                // Blank means one, so the field is never required.
+                validator: (value) =>
+                    validateNumberInput(value, required: false),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -170,13 +165,6 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 now: widget.now,
                 onChanged: (id) => setState(() => _locationId = id),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
               const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [

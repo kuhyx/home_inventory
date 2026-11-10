@@ -115,7 +115,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repo.item('flour')!.quantity, 501);
-      expect(find.text('Restocked Flour'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Restocked')), findsOneWidget);
+      expect(find.text('Flour'), findsWidgets);
     });
 
     // Silently doing nothing is how a user ends up tapping the same button
@@ -129,7 +130,8 @@ void main() {
       await tester.tap(find.bySemanticsLabel('OK'));
       await tester.pumpAndSettle();
 
-      expect(find.text('No item is linked to 590'), findsOneWidget);
+      expect(find.byIcon(Icons.link_off), findsOneWidget);
+      expect(find.text('590'), findsOneWidget);
     });
 
     testWidgets('a cancelled prompt changes nothing', (tester) async {

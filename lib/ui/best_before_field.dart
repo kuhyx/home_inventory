@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
 
 /// The one date shape the field accepts, and the one it writes back.
@@ -35,8 +36,8 @@ DateTime? parseIsoDate(String text) {
 String? validateIsoDate(String? value) {
   final text = (value ?? '').trim();
   if (text.isEmpty) return null;
-  if (!_isoDate.hasMatch(text)) return 'Use YYYY-MM-DD';
-  if (parseIsoDate(text) == null) return 'Not a real date';
+  if (!_isoDate.hasMatch(text)) return invalidField;
+  if (parseIsoDate(text) == null) return invalidField;
   return null;
 }
 

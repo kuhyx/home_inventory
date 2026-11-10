@@ -19,24 +19,23 @@ void main() {
     testWidgets('draws nothing when stock is fine', (tester) async {
       await pumpApp(tester, const StockBadge(state: StockState.ok));
 
-      expect(find.text('Low'), findsNothing);
-      expect(find.text('Out'), findsNothing);
+      expect(find.byType(Icon), findsNothing);
     });
 
-    testWidgets('shows Low in the warning colour', (tester) async {
+    testWidgets('shows the low glyph in the warning colour', (tester) async {
       await pumpApp(tester, const StockBadge(state: StockState.low));
 
-      expect(find.text('Low'), findsOneWidget);
-      final text = tester.widget<Text>(find.text('Low'));
-      expect(text.style?.color, AppStatusColors.dark.warning);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.battery_2_bar));
+      expect(icon.color, AppStatusColors.dark.warning);
+      expect(find.bySemanticsLabel('Low'), findsOneWidget);
     });
 
-    testWidgets('shows Out in the error colour', (tester) async {
+    testWidgets('shows the out glyph in the error colour', (tester) async {
       await pumpApp(tester, const StockBadge(state: StockState.out));
 
-      expect(find.text('Out'), findsOneWidget);
-      final text = tester.widget<Text>(find.text('Out'));
-      expect(text.style?.color, buildDarkTheme().colorScheme.error);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.battery_0_bar));
+      expect(icon.color, buildDarkTheme().colorScheme.error);
+      expect(find.bySemanticsLabel('Out'), findsOneWidget);
     });
   });
 }

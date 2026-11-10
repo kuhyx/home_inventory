@@ -197,12 +197,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   if (items.isEmpty) {
                     return EmptyState(
                       icon: Icons.inventory_2_outlined,
-                      title: _filter.isEmpty
+                      badge: _filter.isEmpty ? Icons.add : Icons.search_off,
+                      semanticLabel: _filter.isEmpty
                           ? 'Nothing here yet'
                           : 'No matches',
-                      message: _filter.isEmpty
-                          ? 'Tap + to add the first thing you own.'
-                          : 'Try a different search.',
                     );
                   }
                   return ListView.builder(

@@ -103,7 +103,10 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Synced via GitHub — 1 item.'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Synced via GitHub — 1 item.'),
+      findsOneWidget,
+    );
     // Two writes now: the log, then this device's revision. The revision is
     // what lets a later tick skip re-downloading an unchanged peer, and it is
     // published *after* the log so a peer can never cache "seen rev X"
@@ -155,7 +158,10 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Synced via Firebase — 1 item.'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Synced via Firebase — 1 item.'),
+      findsOneWidget,
+    );
     expect(
       firebasePuts.any((p) => p.contains('inventory-sync')),
       isTrue,
@@ -178,6 +184,6 @@ void main() {
     await tester.pumpAndSettle();
 
     // A failed sync must never take the app down — it becomes a message.
-    expect(find.textContaining('not found'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('not found')), findsOneWidget);
   });
 }

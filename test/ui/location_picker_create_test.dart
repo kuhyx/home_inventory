@@ -59,7 +59,7 @@ void main() {
     testWidgets('is off by default', (tester) async {
       await pumpPicker(tester);
 
-      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.widgetWithIcon(IconButton, Icons.add), findsNothing);
     });
 
     testWidgets('creates a top-level room and reports it as new', (
@@ -67,7 +67,8 @@ void main() {
     ) async {
       final chosen = await pumpPicker(tester, allowCreate: true);
 
-      expect(find.text('New room'), findsOneWidget);
+      expect(find.bySemanticsLabel('New room'), findsOneWidget);
+      expect(find.byIcon(Icons.add_home_outlined), findsOneWidget);
       await tester.enterText(find.byType(TextField).last, 'korytarz');
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
@@ -85,7 +86,8 @@ void main() {
         createParentId: room.id,
       );
 
-      expect(find.text('New place in korytarz'), findsOneWidget);
+      expect(find.bySemanticsLabel('New place in korytarz'), findsOneWidget);
+      expect(find.byIcon(Icons.subdirectory_arrow_right), findsOneWidget);
       await tester.enterText(find.byType(TextField).last, 'szafka z lewej');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();

@@ -54,6 +54,7 @@ class PlaceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     final hasChildren = node.children.isNotEmpty;
     final indent =
         AppSpacing.md +
@@ -64,17 +65,34 @@ class PlaceRow extends StatelessWidget {
       leading: hasChildren
           ? IconButton(
               onPressed: onToggle,
-              icon: Icon(expanded ? Icons.expand_more : Icons.chevron_right),
-              tooltip: expanded ? 'Collapse' : 'Expand',
+              icon: Icon(
+                expanded ? Icons.expand_more : Icons.chevron_right,
+                semanticLabel: expanded ? 'Collapse' : 'Expand',
+              ),
             )
           // Keeps childless rows aligned with their siblings' labels.
           : const SizedBox(width: 48),
-      title: Text(node.name.isEmpty ? 'Unnamed place' : node.name),
-      subtitle: Text(
-        _countLabel(node.totalItemCount),
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
+      // A nameless place (synced in blank) shows a dashed box, not a word.
+      title: node.name.isEmpty
+          ? const Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Icon(
+                Icons.check_box_outline_blank,
+                semanticLabel: 'Unnamed place',
+              ),
+            )
+          : Text(node.name),
+      // Box glyph + count, the same pair the item summary strip uses.
+      subtitle: Row(
+        children: [
+          Icon(Icons.inventory_2_outlined, size: 14, color: muted),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            '${node.totalItemCount}',
+            semanticsLabel: _countLabel(node.totalItemCount),
+            style: theme.textTheme.labelMedium?.copyWith(color: muted),
+          ),
+        ],
       ),
       onTap: hasChildren ? onToggle : onShow,
       trailing: Row(
@@ -124,6 +142,7 @@ class PlaceRow extends StatelessWidget {
     );
   }
 
+  /// Spoken-only item count.
   static String _countLabel(int count) =>
       count == 1 ? '1 item' : '$count items';
 }

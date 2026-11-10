@@ -121,7 +121,7 @@ void main() {
     await pickPlace(tester, 'korytarz');
     await tester.tap(find.byType(LocationField));
     await tester.pumpAndSettle();
-    expect(find.text('New place in korytarz'), findsOneWidget);
+    expect(find.bySemanticsLabel('New place in korytarz'), findsOneWidget);
     await tester.enterText(find.byType(TextField).last, 'szafka z lewej');
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();

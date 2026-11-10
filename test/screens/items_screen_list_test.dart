@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/screens/items_screen.dart';
+import 'package:home_inventory/screens/quick_add_sheet.dart';
 import 'package:home_inventory/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,8 +41,9 @@ void main() {
   testWidgets('shows the empty state before anything is added', (tester) async {
     await pumpList(tester);
 
-    expect(find.text('Nothing here yet'), findsOneWidget);
-    expect(find.text('Tap + to add the first thing you own.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Nothing here yet'), findsOneWidget);
+    // The add badge points at the + button.
+    expect(find.byIcon(Icons.add), findsNWidgets(2));
   });
   testWidgets('lists items newest-edited first', (tester) async {
     await repo.upsert(
@@ -65,14 +67,14 @@ void main() {
 
     await pumpList(tester);
 
-    expect(find.text('2 items · 1 to buy'), findsOneWidget);
+    expect(find.bySemanticsLabel('2 items · 1 to buy'), findsOneWidget);
   });
   testWidgets('the summary strip says item, singular, for one', (tester) async {
     await repo.upsert(itemFixture(id: 'a', quantity: 5));
 
     await pumpList(tester);
 
-    expect(find.text('1 item · 0 to buy'), findsOneWidget);
+    expect(find.bySemanticsLabel('1 item · 0 to buy'), findsOneWidget);
   });
   testWidgets('the summary strip hides itself when empty', (tester) async {
     await pumpList(tester);
@@ -97,8 +99,8 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'zzz');
     await settleSearch(tester);
 
-    expect(find.text('No matches'), findsOneWidget);
-    expect(find.text('Nothing here yet'), findsNothing);
+    expect(find.bySemanticsLabel('No matches'), findsOneWidget);
+    expect(find.bySemanticsLabel('Nothing here yet'), findsNothing);
   });
   testWidgets('opens the add sheet from the button', (tester) async {
     await pumpList(tester);
@@ -106,7 +108,7 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add an item'), findsOneWidget);
+    expect(find.byType(QuickAddSheet), findsOneWidget);
   });
   testWidgets('the add sheet defaults to the filtered place', (tester) async {
     final room = await repo.createLocation(name: 'korytarz', now: at);

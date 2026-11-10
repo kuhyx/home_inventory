@@ -6,6 +6,7 @@ import 'package:home_inventory/screens/quick_add_sheet.dart';
 import 'package:home_inventory/ui/location_field.dart';
 
 import '../support/builders.dart';
+import '../support/field_state.dart';
 import '../support/pump.dart';
 
 void main() {
@@ -93,7 +94,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
-    expect(find.text('Give it a name'), findsOneWidget);
+    expect(hasFieldError(tester, find.byType(TextFormField).at(0)), isTrue);
     expect(repo.listItems(), isEmpty);
   });
   testWidgets('rejects a quantity that is not a number', (tester) async {
@@ -104,7 +105,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
-    expect(find.text('Quantity must be a number'), findsOneWidget);
+    expect(hasFieldError(tester, find.byType(TextFormField).at(1)), isTrue);
     expect(repo.listItems(), isEmpty);
   });
   testWidgets('rejects a negative quantity', (tester) async {
@@ -115,7 +116,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
-    expect(find.text('Quantity must be a number'), findsOneWidget);
+    expect(hasFieldError(tester, find.byType(TextFormField).at(1)), isTrue);
   });
   testWidgets('a blank quantity means one', (tester) async {
     await pumpSheet(tester);

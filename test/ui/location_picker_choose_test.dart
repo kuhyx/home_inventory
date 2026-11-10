@@ -64,13 +64,15 @@ void main() {
   testWidgets('says so when there are no places yet', (tester) async {
     await pumpPicker(tester);
 
-    expect(find.textContaining('No places yet'), findsOneWidget);
-    expect(find.textContaining('Locations tab'), findsOneWidget);
+    expect(find.bySemanticsLabel('No places yet'), findsOneWidget);
+    // No create box here, so the badge says "add one" (on the Locations tab).
+    expect(find.byIcon(Icons.add), findsOneWidget);
   });
   testWidgets('points at the create box when it can make one', (tester) async {
     await pumpPicker(tester, allowCreate: true);
 
-    expect(find.textContaining('Type a name below'), findsOneWidget);
+    // The badge points down at the create box.
+    expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
   });
   testWidgets('lists every place, flattened', (tester) async {
     final room = await repo.createLocation(name: 'Korytarz', now: now);

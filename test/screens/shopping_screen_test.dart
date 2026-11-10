@@ -35,7 +35,7 @@ void main() {
 
     await pumpShopping(tester);
 
-    expect(find.text('Nothing to buy'), findsOneWidget);
+    expect(find.bySemanticsLabel('Nothing to buy'), findsOneWidget);
   });
 
   testWidgets('lists items that are out of stock', (tester) async {
@@ -62,7 +62,7 @@ void main() {
     await pumpShopping(tester);
     await openSellTab(tester);
 
-    expect(find.text('Nothing to sell'), findsOneWidget);
+    expect(find.bySemanticsLabel('Nothing to sell'), findsOneWidget);
   });
 
   testWidgets('the sell tab lists sellable items', (tester) async {

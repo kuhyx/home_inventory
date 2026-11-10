@@ -115,7 +115,7 @@ void main() {
     testWidgets('pre-fills from the existing item', (tester) async {
       await pumpForm(tester, editId: 'i1');
 
-      expect(find.text('Edit item'), findsOneWidget);
+      expect(find.bySemanticsLabel('Edit item'), findsOneWidget);
       expect(textOf(tester, name), 'Flour');
       expect(textOf(tester, quantity), '5');
       expect(textOf(tester, unit), 'kg');

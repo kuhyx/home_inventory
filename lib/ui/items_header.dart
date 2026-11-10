@@ -84,7 +84,7 @@ class ItemsHeader extends StatelessWidget {
               CheckedPopupMenuItem(
                 value: value,
                 checked: value == sort,
-                child: Text(sortLabel(value)),
+                child: Icon(sortGlyph(value), semanticLabel: sortLabel(value)),
               ),
           ],
         ),

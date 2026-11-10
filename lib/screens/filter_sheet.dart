@@ -7,7 +7,9 @@ import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/ui/filter_facets.dart';
+import 'package:home_inventory/ui/freshness_badge.dart';
 import 'package:home_inventory/ui/location_picker.dart';
+import 'package:home_inventory/ui/stock_badge.dart';
 import 'package:home_inventory/ui/theme.dart';
 
 /// Modal editor for an [ItemFilter].
@@ -55,7 +57,8 @@ class _FilterSheetState extends State<FilterSheet> {
         .map(repository.pathLabel)
         .where((label) => label.isNotEmpty)
         .toList();
-    if (named.isEmpty) return 'Somewhere';
+    // Every chosen place was deleted meanwhile: show the bare pin.
+    if (named.isEmpty) return '';
     // The selection is a whole subtree, so the shortest path is its root and
     // the only part worth showing.
     named.sort((a, b) => a.length.compareTo(b.length));
@@ -87,8 +90,9 @@ class _FilterSheetState extends State<FilterSheet> {
     // The place facet is a picker rather than a chip row: at arbitrary depth a
     // flat list of every shelf in the flat is unusable, and the chips could
     // not show which shelf belongs to which cupboard anyway.
+    // Empty means "anywhere": the facet then shows its pin glyph alone.
     final placeLabel = _filter.locationIds.isEmpty
-        ? 'Anywhere'
+        ? ''
         : _placeLabel(repository);
 
     return SafeArea(
@@ -127,7 +131,8 @@ class _FilterSheetState extends State<FilterSheet> {
                       chips: [
                         for (final state in StockState.values)
                           FacetChip(
-                            label: _stockLabel(state),
+                            label: stockSpoken(state),
+                            icon: stockGlyph(state),
                             selected: _filter.stock.contains(state),
                             onSelected: () => _toggle(
                               _filter.stock,
@@ -143,7 +148,8 @@ class _FilterSheetState extends State<FilterSheet> {
                       chips: [
                         for (final state in FreshnessState.values)
                           FacetChip(
-                            label: _freshnessLabel(state),
+                            label: freshnessSpoken(state),
+                            icon: freshnessGlyph(state),
                             selected: _filter.freshness.contains(state),
                             onSelected: () => _toggle(
                               _filter.freshness,
@@ -161,6 +167,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         for (final flag in ItemFlag.values)
                           FacetChip(
                             label: _flagLabel(flag),
+                            icon: _flagGlyph(flag),
                             selected: _filter.flags.contains(flag),
                             onSelected: () => _toggle(
                               _filter.flags,
@@ -216,16 +223,9 @@ class _FilterSheetState extends State<FilterSheet> {
     );
   }
 
-  static String _stockLabel(StockState state) => switch (state) {
-    StockState.ok => 'In stock',
-    StockState.low => 'Low',
-    StockState.out => 'Out',
-  };
-
-  static String _freshnessLabel(FreshnessState state) => switch (state) {
-    FreshnessState.fresh => 'Fresh',
-    FreshnessState.dueSoon => 'Due soon',
-    FreshnessState.expired => 'Expired',
+  static IconData _flagGlyph(ItemFlag flag) => switch (flag) {
+    ItemFlag.wanted => Icons.star,
+    ItemFlag.sellable => Icons.sell,
   };
 
   static String _flagLabel(ItemFlag flag) => switch (flag) {

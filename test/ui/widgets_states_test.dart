@@ -7,6 +7,7 @@ import 'package:home_inventory/ui/freshness_badge.dart';
 import 'package:home_inventory/ui/item_tile.dart';
 import 'package:home_inventory/ui/quantity_stepper.dart';
 import 'package:home_inventory/ui/stock_badge.dart';
+import 'package:home_inventory/ui/status_pill.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
 import 'package:home_inventory/ui/theme.dart';
 
@@ -14,21 +15,24 @@ import '../support/builders.dart';
 import '../support/pump.dart';
 
 void main() {
-  testWidgets('EmptyState shows its icon, title and message', (tester) async {
+  testWidgets('EmptyState paints its glyph and badge, speaks its label', (
+    tester,
+  ) async {
     await pumpApp(
       tester,
       const Scaffold(
         body: EmptyState(
           icon: Icons.inventory_2_outlined,
-          title: 'Nothing here yet',
-          message: 'Tap + to add something.',
+          badge: Icons.add,
+          semanticLabel: 'Nothing here yet',
         ),
       ),
     );
 
     expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
-    expect(find.text('Nothing here yet'), findsOneWidget);
-    expect(find.text('Tap + to add something.'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.bySemanticsLabel('Nothing here yet'), findsOneWidget);
+    expect(find.byType(Text), findsNothing);
   });
   group('FreshnessBadge', () {
     final now = DateTime.utc(2026, 7, 26);
@@ -50,11 +54,14 @@ void main() {
         ),
       );
 
-      final text = tester.widget<Text>(find.text('2d left'));
+      final text = tester.widget<Text>(find.text('2'));
       expect(text.style?.color, AppStatusColors.dark.warning);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.schedule));
+      expect(icon.color, AppStatusColors.dark.warning);
+      expect(find.bySemanticsLabel('2d left'), findsOneWidget);
     });
 
-    testWidgets('shows Expired in the error colour', (tester) async {
+    testWidgets('shows the expired glyph in the error colour', (tester) async {
       await pumpApp(
         tester,
         FreshnessBadge(
@@ -62,8 +69,10 @@ void main() {
         ),
       );
 
-      final text = tester.widget<Text>(find.text('Expired'));
-      expect(text.style?.color, buildDarkTheme().colorScheme.error);
+      final icon = tester.widget<Icon>(find.byIcon(Icons.event_busy));
+      expect(icon.color, buildDarkTheme().colorScheme.error);
+      expect(find.byType(Text), findsNothing);
+      expect(find.bySemanticsLabel('Expired'), findsOneWidget);
     });
   });
   group('ItemTile and dates', () {
@@ -81,7 +90,10 @@ void main() {
         ),
       );
 
-      expect(find.text('2d left'), findsOneWidget);
+      // ListTile merges its semantics, so read the pill's own label.
+      final pill = tester.widget<StatusPill>(find.byType(StatusPill));
+      expect(pill.semanticLabel, '2d left');
+      expect(pill.value, '2');
     });
 
     // The default clock path: a date this far out is fresh whenever the suite
@@ -95,7 +107,7 @@ void main() {
       );
 
       expect(find.byType(FreshnessBadge), findsOneWidget);
-      expect(find.textContaining('left'), findsNothing);
+      expect(find.byIcon(Icons.schedule), findsNothing);
     });
 
     testWidgets('an undated item gets no badge at all', (tester) async {

@@ -11,8 +11,11 @@ import 'package:home_inventory/sync/sync_service.dart';
 import 'package:home_inventory/sync/sync_settings.dart';
 import 'package:http/http.dart' as http;
 
-/// Checks that the configured repo is reachable, as a status line.
-Future<String> testGitHubConnection(
+/// The result of a mirror action: whether it worked, and a spoken-only line.
+typedef MirrorOutcome = ({bool ok, String spoken});
+
+/// Checks that the configured repo is reachable.
+Future<MirrorOutcome> testGitHubConnection(
   SyncSettings settings, {
   http.Client? httpClient,
 }) async {
@@ -24,9 +27,11 @@ Future<String> testGitHubConnection(
   );
   try {
     final ok = await client.canAccessRepo();
-    return ok
-        ? 'Connected to ${settings.owner}/${settings.repo}.'
-        : 'Cannot reach ${settings.owner}/${settings.repo}.';
+    final where = '${settings.owner}/${settings.repo}';
+    return (
+      ok: ok,
+      spoken: ok ? 'Connected to $where.' : 'Cannot reach $where.',
+    );
   } finally {
     client.close();
   }

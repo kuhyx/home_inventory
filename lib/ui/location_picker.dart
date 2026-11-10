@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/location.dart';
 import 'package:home_inventory/models/location_tree.dart';
+import 'package:home_inventory/ui/empty_state.dart';
 import 'package:home_inventory/ui/theme.dart';
 
 /// What a picker returned: a place, or the explicit "no place" choice.
@@ -126,7 +127,14 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
     Navigator.of(context).pop(LocationChoice(location, created: !existed));
   }
 
-  /// Where a typed name would land, spelled out rather than implied.
+  /// The path a typed name would land under, empty for a new room.
+  String get _parentPath {
+    final parentId = widget.createParentId;
+    if (parentId == null || parentId.isEmpty) return '';
+    return widget.repository.pathLabel(parentId);
+  }
+
+  /// Spoken-only: where a typed name would land.
   String get _createLabel {
     final parentId = widget.createParentId;
     if (parentId == null || parentId.isEmpty) return 'New room';
@@ -135,11 +143,11 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final repository = widget.repository;
     final title = widget.semanticLabel;
     final blocked = widget.blocked;
     final rootLabel = widget.rootLabel;
+    final parentPath = _parentPath;
     final rows = <LocationTreeNode>[];
     void walk(List<LocationTreeNode> nodes) {
       for (final node in nodes) {
@@ -176,11 +184,14 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
               child: rows.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Text(
-                        widget.allowCreate
-                            ? 'No places yet. Type a name below to make one.'
-                            : 'No places yet. Add one on the Locations tab.',
-                        style: theme.textTheme.bodyMedium,
+                      // The badge points at the create box below, or says
+                      // "add one" where there is no box.
+                      child: EmptyState(
+                        icon: Icons.room_preferences_outlined,
+                        badge: widget.allowCreate
+                            ? Icons.arrow_downward
+                            : Icons.add,
+                        semanticLabel: 'No places yet',
                       ),
                     )
                   : ListView.builder(
@@ -210,8 +221,16 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
               TextField(
                 controller: _newName,
                 textCapitalization: TextCapitalization.sentences,
+                // Textgate: a house glyph for a new room; for a nested place
+                // the parent's path (user content) is the only painted text.
                 decoration: InputDecoration(
-                  labelText: _createLabel,
+                  prefixIcon: Icon(
+                    parentPath.isEmpty
+                        ? Icons.add_home_outlined
+                        : Icons.subdirectory_arrow_right,
+                    semanticLabel: _createLabel,
+                  ),
+                  labelText: parentPath.isEmpty ? null : parentPath,
                   suffixIcon: IconButton(
                     onPressed: _create,
                     icon: const Icon(Icons.add, semanticLabel: 'Create it'),

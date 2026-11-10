@@ -19,7 +19,7 @@ class PlaceFacet extends StatelessWidget {
     super.key,
   });
 
-  /// The chosen place's path, or "Anywhere".
+  /// The chosen place's path (user content), or empty for anywhere.
   final String label;
 
   /// Whether a place is chosen, which is what shows the clear button.
@@ -39,19 +39,24 @@ class PlaceFacet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Place',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          Icon(
+            Icons.place_outlined,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+            semanticLabel: 'Place',
           ),
           const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
+                  key: const Key('place_facet'),
                   onPressed: onPick,
-                  icon: const Icon(Icons.place_outlined),
+                  // A globe for "anywhere", a pin beside the chosen path.
+                  icon: Icon(
+                    label.isEmpty ? Icons.public : Icons.place,
+                    semanticLabel: label.isEmpty ? 'Anywhere' : null,
+                  ),
                   label: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(label, overflow: TextOverflow.ellipsis),
@@ -126,11 +131,15 @@ class FacetChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onSelected,
+    this.icon,
     super.key,
   });
 
-  /// What the chip reads.
+  /// Spoken name; painted only when there is no [icon] (user categories).
   final String label;
+
+  /// Glyph painted instead of [label].
+  final IconData? icon;
 
   /// Whether this value is currently restricting the list.
   final bool selected;
@@ -140,7 +149,9 @@ class FacetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FilterChip(
-    label: Text(label),
+    label: icon == null
+        ? Text(label)
+        : Icon(icon, size: 18, semanticLabel: label),
     selected: selected,
     onSelected: (_) => onSelected(),
   );

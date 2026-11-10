@@ -10,6 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../support/builders.dart';
 import '../support/pump.dart';
 
+/// [label] inside the filter button's badge, not the summary strip's counts.
+Finder badgeText(String label) =>
+    find.descendant(of: find.byType(Badge), matching: find.text(label));
+
 void main() {
   final at = DateTime.utc(2026, 7, 26);
 
@@ -66,7 +70,7 @@ void main() {
 
     // No badge label at all while nothing is restricted — a "0" would read as
     // a filter that is on and matching nothing.
-    expect(find.text('0'), findsNothing);
+    expect(badgeText('0'), findsNothing);
 
     await tester.tap(find.byIcon(Icons.filter_list));
     await tester.pumpAndSettle();
@@ -75,7 +79,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Apply'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1'), findsOneWidget);
+    expect(badgeText('1'), findsOneWidget);
     expect(find.text('Cable'), findsOneWidget);
   });
   testWidgets('dismissing the filter sheet changes nothing', (tester) async {
@@ -92,6 +96,6 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
 
-    expect(find.text('1'), findsNothing);
+    expect(badgeText('1'), findsNothing);
   });
 }

@@ -63,8 +63,8 @@ void main() {
   ) async {
     await pumpSheet(tester);
 
-    expect(find.text('Low'), findsOneWidget);
-    expect(find.text('Wanted'), findsOneWidget);
+    expect(find.bySemanticsLabel('Low'), findsOneWidget);
+    expect(find.bySemanticsLabel('Wanted'), findsOneWidget);
   });
   testWidgets('hides groups that have nothing to offer', (tester) async {
     await pumpSheet(tester);
@@ -75,9 +75,9 @@ void main() {
   testWidgets('stock and flag chips are selectable too', (tester) async {
     final popped = await pumpSheet(tester);
 
-    await tester.tap(find.widgetWithText(FilterChip, 'Out'));
+    await tester.tap(find.widgetWithIcon(FilterChip, Icons.battery_0_bar));
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilterChip, 'Sellable'));
+    await tester.tap(find.widgetWithIcon(FilterChip, Icons.sell));
     await tester.pump();
     await tester.tap(find.bySemanticsLabel('Apply'));
     await tester.pumpAndSettle();
@@ -88,10 +88,11 @@ void main() {
     );
   });
   group('the place facet', () {
-    testWidgets('reads "Anywhere" when nothing is picked', (tester) async {
+    testWidgets('shows the globe when nothing is picked', (tester) async {
       await pumpSheet(tester);
 
-      expect(find.text('Anywhere'), findsOneWidget);
+      expect(find.byIcon(Icons.public), findsOneWidget);
+      expect(find.bySemanticsLabel('Anywhere'), findsWidgets);
     });
 
     // A tree cannot be a chip row: chips could not say which cupboard a shelf
@@ -105,7 +106,7 @@ void main() {
       );
       final popped = await pumpSheet(tester);
 
-      await tester.tap(find.text('Anywhere'));
+      await tester.tap(find.byKey(const Key('place_facet')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Office').last);
       await tester.pumpAndSettle();
@@ -158,7 +159,7 @@ void main() {
       await repo.createLocation(name: 'Office', now: at);
       final popped = await pumpSheet(tester);
 
-      await tester.tap(find.text('Anywhere'));
+      await tester.tap(find.byKey(const Key('place_facet')));
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
@@ -171,10 +172,10 @@ void main() {
     testWidgets('says so when there are no places yet', (tester) async {
       await pumpSheet(tester);
 
-      await tester.tap(find.text('Anywhere'));
+      await tester.tap(find.byKey(const Key('place_facet')));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('No places yet'), findsOneWidget);
+      expect(find.bySemanticsLabel('No places yet'), findsOneWidget);
     });
   });
 }

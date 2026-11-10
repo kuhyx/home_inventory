@@ -49,10 +49,7 @@ class ShoppingScreen extends StatelessWidget {
             repository: repository,
             now: now,
             emptyIcon: Icons.shopping_cart_outlined,
-            emptyTitle: 'Nothing to buy',
-            emptyMessage:
-                'Everything is above its threshold, and nothing is marked '
-                'as wanted.',
+            emptyLabel: 'Nothing to buy',
             showRestock: true,
           ),
           _ItemList(
@@ -60,8 +57,7 @@ class ShoppingScreen extends StatelessWidget {
             repository: repository,
             now: now,
             emptyIcon: Icons.sell_outlined,
-            emptyTitle: 'Nothing to sell',
-            emptyMessage: 'Mark an item as sellable and it will show up here.',
+            emptyLabel: 'Nothing to sell',
             showRestock: false,
           ),
         ],
@@ -76,8 +72,7 @@ class _ItemList extends StatelessWidget {
     required this.repository,
     required this.now,
     required this.emptyIcon,
-    required this.emptyTitle,
-    required this.emptyMessage,
+    required this.emptyLabel,
     required this.showRestock,
   });
 
@@ -85,8 +80,9 @@ class _ItemList extends StatelessWidget {
   final ItemRepository repository;
   final DateTime Function()? now;
   final IconData emptyIcon;
-  final String emptyTitle;
-  final String emptyMessage;
+
+  /// Spoken-only label for the empty state.
+  final String emptyLabel;
   final bool showRestock;
 
   Future<void> _open(BuildContext context, Item item) async {
@@ -142,8 +138,8 @@ class _ItemList extends StatelessWidget {
       if (items.isEmpty) {
         return EmptyState(
           icon: emptyIcon,
-          title: emptyTitle,
-          message: emptyMessage,
+          badge: Icons.check,
+          semanticLabel: emptyLabel,
         );
       }
       return ListView.builder(

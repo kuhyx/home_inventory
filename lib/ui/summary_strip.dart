@@ -7,7 +7,18 @@ import 'package:home_inventory/models/inventory_summary.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/ui/theme.dart';
 
-/// How each sort option reads in the menu.
+/// Glyph for each sort option in the menu.
+IconData sortGlyph(ItemSort sort) => switch (sort) {
+  ItemSort.updatedDesc => Icons.update,
+  ItemSort.nameAsc => Icons.sort_by_alpha,
+  ItemSort.createdDesc => Icons.fiber_new_outlined,
+  ItemSort.quantityAsc => Icons.format_list_numbered,
+  ItemSort.locationAsc => Icons.place_outlined,
+  ItemSort.lowStockFirst => Icons.battery_2_bar,
+  ItemSort.expiringFirst => Icons.schedule,
+};
+
+/// Spoken-only name of each sort option.
 String sortLabel(ItemSort sort) => switch (sort) {
   ItemSort.updatedDesc => 'Recently changed',
   ItemSort.nameAsc => 'Name (A-Z)',
@@ -34,6 +45,9 @@ class SummaryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
     return StreamBuilder<InventorySummary>(
       stream: repository.watchSummary(),
       builder: (context, snapshot) {
@@ -45,18 +59,31 @@ class SummaryStrip extends StatelessWidget {
             right: AppSpacing.md,
             bottom: AppSpacing.sm,
           ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '${summary.total} ${summary.total == 1 ? 'item' : 'items'}'
-              ' · ${summary.toBuy} to buy',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+          child: Semantics(
+            label:
+                '${summary.total} ${summary.total == 1 ? 'item' : 'items'}'
+                ' · ${summary.toBuy} to buy',
+            excludeSemantics: true,
+            child: Row(
+              children: [
+                _count(Icons.inventory_2_outlined, summary.total, muted),
+                const SizedBox(width: AppSpacing.md),
+                _count(Icons.shopping_cart_outlined, summary.toBuy, muted),
+              ],
             ),
           ),
         );
       },
     );
   }
+
+  /// A glyph and its count, in the strip's muted colour.
+  static Widget _count(IconData icon, int value, TextStyle? style) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 16, color: style?.color),
+      const SizedBox(width: AppSpacing.xs),
+      Text('$value', style: style),
+    ],
+  );
 }

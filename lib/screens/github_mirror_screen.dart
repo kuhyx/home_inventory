@@ -71,7 +71,10 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
   final _token = TextEditingController();
 
   SyncSettings? _settings;
+
+  /// Spoken-only status line; [_statusOk] picks the glyph that is painted.
   String _status = '';
+  bool _statusOk = true;
   bool _busy = false;
   DeviceCodeResponse? _pending;
 
@@ -118,28 +121,29 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
   /// Every network path funnels through here so a failure always becomes a
   /// status line rather than an unhandled exception — sync is optional, and
   /// losing it must never take the app down with it.
-  Future<void> _guard(Future<String> Function() action) async {
+  Future<void> _guard(Future<MirrorOutcome> Function() action) async {
     setState(() {
       _busy = true;
       _status = '';
     });
-    String message;
+    MirrorOutcome outcome;
     try {
-      message = await action();
+      outcome = await action();
     } on DeviceAuthException catch (error) {
       // Only this one is special-cased: its `message` is the human-readable
       // half, and toString() would prefix it with the exception's own name.
       // Everything else — including GitHubSyncError, which the client already
       // wraps transport failures into — renders identically either way, so a
       // single catch-all handles them.
-      message = error.message;
+      outcome = (ok: false, spoken: error.message);
     } on Exception catch (error) {
-      message = '$error';
+      outcome = (ok: false, spoken: '$error');
     }
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _status = message;
+      _status = outcome.spoken;
+      _statusOk = outcome.ok;
     });
   }
 
@@ -149,7 +153,7 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
     await _guard(() async {
       await _persist(_current().copyWith(token: token));
       _token.clear();
-      return 'Token saved.';
+      return (ok: true, spoken: 'Token saved.');
     });
   }
 
@@ -167,12 +171,12 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
     final firebaseConnected =
         await (widget.sessionProbe ?? isFirebaseConfigured)();
     if (!settings.isConfigured && !firebaseConnected) {
-      return 'Connect a sync backend in Settings first.';
+      return (ok: false, spoken: 'Connect a sync backend in Settings first.');
     }
     await _persist(settings);
     // `openFirebase` is the production default; tests always inject, because
     // the real one reaches the OS keystore through a platform channel.
-    return await runMirrorSync(
+    final synced = await runMirrorSync(
       repository: widget.repository,
       settings: settings,
       firebaseFactory: widget.firebaseFactory ?? openFirebase,
@@ -180,18 +184,21 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
       httpClient: widget.httpClient,
       now: widget.now?.call(),
     );
+    return (ok: true, spoken: synced);
   });
 
   Future<void> _connect() => _guard(() async {
     final settings = _current();
-    if (!settings.canUseDeviceFlow) return 'No client id configured.';
+    if (!settings.canUseDeviceFlow) {
+      return (ok: false, spoken: 'No client id configured.');
+    }
     final auth = GitHubDeviceAuth(
       clientId: settings.clientId,
       httpClient: widget.httpClient,
     );
     try {
       final device = await auth.requestDeviceCode();
-      if (!mounted) return 'Cancelled.';
+      if (!mounted) return (ok: false, spoken: 'Cancelled.');
       setState(() => _pending = device);
       // Genuinely best-effort, hence the swallow: the user code is already on
       // screen, so on a machine with no browser they can still type the URL
@@ -208,7 +215,7 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
       final token = await auth.pollForToken(device);
       await _persist(settings.copyWith(token: token));
       if (mounted) setState(() => _pending = null);
-      return 'Connected to GitHub.';
+      return (ok: true, spoken: 'Connected to GitHub.');
     } finally {
       auth.close();
     }
@@ -222,6 +229,7 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
     pending: _pending,
     busy: _busy,
     status: _status,
+    statusOk: _statusOk,
     nodeId: widget.repository.nodeId,
     onConnect: _connect,
     onTest: _testConnection,

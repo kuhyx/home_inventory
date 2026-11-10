@@ -3,9 +3,25 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:home_inventory/models/item.dart';
+import 'package:home_inventory/ui/status_pill.dart';
 import 'package:home_inventory/ui/theme.dart';
 
-/// A small pill naming an item's [StockState], or nothing at all when the
+/// Glyph for each [StockState]: a battery draining, so the filter chips and
+/// the list badges share one picture per state.
+IconData stockGlyph(StockState state) => switch (state) {
+  StockState.ok => Icons.battery_full,
+  StockState.low => Icons.battery_2_bar,
+  StockState.out => Icons.battery_0_bar,
+};
+
+/// Spoken-only name of each [StockState].
+String stockSpoken(StockState state) => switch (state) {
+  StockState.ok => 'In stock',
+  StockState.low => 'Low',
+  StockState.out => 'Out',
+};
+
+/// A small pill showing an item's [StockState], or nothing at all when the
 /// item is fine.
 ///
 /// Drawing nothing for [StockState.ok] is deliberate: a badge on every row
@@ -27,24 +43,10 @@ class StockBadge extends StatelessWidget {
     // returned above, so a third arm would be permanently dead code that the
     // coverage gate could never satisfy honestly.
     final isOut = state == StockState.out;
-    final label = isOut ? 'Out' : 'Low';
-    final color = isOut ? theme.colorScheme.error : status.warning;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        // 15% fill and a 40% border, per the shared component spec — a solid
-        // status fill would shout louder than the item's own name.
-        color: color.withValues(alpha: 0.15),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(color: color),
-      ),
+    return StatusPill(
+      icon: stockGlyph(state),
+      color: isOut ? theme.colorScheme.error : status.warning,
+      semanticLabel: stockSpoken(state),
     );
   }
 }

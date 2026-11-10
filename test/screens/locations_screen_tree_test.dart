@@ -6,6 +6,11 @@ import 'package:home_inventory/screens/locations_screen.dart';
 import '../support/builders.dart';
 import '../support/pump.dart';
 
+/// The row's painted count, found by its spoken label (ListTile merges it).
+Finder countText(String spoken) => find.byWidgetPredicate(
+  (widget) => widget is Text && widget.semanticsLabel == spoken,
+);
+
 void main() {
   final now = DateTime.utc(2026, 8, 5);
   late ItemRepository repo;
@@ -50,9 +55,9 @@ void main() {
     await pumpLocations(tester);
 
     expect(find.text('Office'), findsOneWidget);
-    expect(find.text('2 items'), findsOneWidget);
+    expect(countText('2 items'), findsOneWidget);
     expect(find.text('Kitchen'), findsOneWidget);
-    expect(find.text('1 item'), findsOneWidget);
+    expect(countText('1 item'), findsOneWidget);
   });
   testWidgets('a place with no items still shows', (tester) async {
     await repo.createLocation(name: 'Garaż', now: now);
@@ -60,7 +65,7 @@ void main() {
     await pumpLocations(tester);
 
     expect(find.text('Garaż'), findsOneWidget);
-    expect(find.text('0 items'), findsOneWidget);
+    expect(countText('0 items'), findsOneWidget);
   });
   testWidgets('children stay hidden until the parent is expanded', (
     tester,

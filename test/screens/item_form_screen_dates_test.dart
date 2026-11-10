@@ -6,6 +6,7 @@ import 'package:home_inventory/screens/item_form_screen.dart';
 import 'package:home_inventory/ui/location_field.dart';
 
 import '../support/builders.dart';
+import '../support/field_state.dart';
 import '../support/pump.dart';
 
 void main() {
@@ -126,7 +127,7 @@ void main() {
       await save(tester);
       await tester.pump();
 
-      expect(find.text('Use YYYY-MM-DD'), findsOneWidget);
+      expect(hasFieldError(tester, fieldAt(bestBefore)), isTrue);
       expect(repo.listItems(), isEmpty);
     });
 
@@ -143,7 +144,7 @@ void main() {
       await save(tester);
       await tester.pump();
 
-      expect(find.text('Not a real date'), findsOneWidget);
+      expect(hasFieldError(tester, fieldAt(bestBefore)), isTrue);
       expect(repo.listItems(), isEmpty);
     });
 

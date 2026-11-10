@@ -96,6 +96,16 @@ ThemeData _buildTheme(ColorScheme colorScheme, AppStatusColors statusColors) {
         borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: BorderSide(color: colorScheme.primary, width: 2),
       ),
+      // Textgate: validators paint no sentence (`invalidField`), so a bad
+      // field is told apart by a thicker border as well as by its colour.
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderSide: BorderSide(color: colorScheme.error, width: 3),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderSide: BorderSide(color: colorScheme.error, width: 3),
+      ),
       labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
     ),
     dividerTheme: DividerThemeData(

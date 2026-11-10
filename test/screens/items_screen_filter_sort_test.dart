@@ -48,7 +48,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.sort));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Name (A-Z)').last);
+    await tester.tap(find.byIcon(Icons.sort_by_alpha).last);
     await tester.pumpAndSettle();
 
     final names = tester

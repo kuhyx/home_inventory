@@ -43,7 +43,7 @@ void main() {
 
     await pumpDetail(tester);
 
-    expect(find.textContaining('Recounted'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Recounted')), findsOneWidget);
   });
   testWidgets('hides the history section when there is none', (tester) async {
     await repo.upsert(itemFixture(quantity: 0, updatedAt: at));
@@ -57,7 +57,7 @@ void main() {
 
     await pumpDetail(tester);
 
-    expect(find.textContaining('days left'), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('days left')), findsNothing);
   });
   testWidgets('shows the rate hint once there is enough usage', (tester) async {
     await repo.upsert(itemFixture(quantity: 40, lowStockAt: 10, updatedAt: at));
@@ -72,7 +72,7 @@ void main() {
 
     await pumpDetail(tester);
 
-    expect(find.textContaining('days left'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('days left')), findsOneWidget);
   });
   testWidgets('opens the edit form', (tester) async {
     await repo.upsert(itemFixture(name: 'Flour', updatedAt: at));
@@ -82,7 +82,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ItemFormScreen), findsOneWidget);
-    expect(find.text('Edit item'), findsOneWidget);
+    expect(find.bySemanticsLabel('Edit item'), findsOneWidget);
   });
   group('barcodes', () {
     testWidgets('lists a linked code with what one scan is worth', (
@@ -98,7 +98,11 @@ void main() {
       await pumpDetail(tester);
 
       expect(find.text('5900512300153'), findsOneWidget);
-      expect(find.text('+500 g per scan'), findsOneWidget);
+      expect(find.text('+500 g'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(r'\+500 g per scan')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('omits the unit for a plain count', (tester) async {
@@ -106,7 +110,8 @@ void main() {
       await repo.linkBarcode(code: '590', itemId: 'i1', amount: 2);
       await pumpDetail(tester);
 
-      expect(find.text('+2 per scan'), findsOneWidget);
+      expect(find.text('+2'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'\+2 per scan')), findsOneWidget);
     });
 
     testWidgets('links a code typed into the dialog', (tester) async {

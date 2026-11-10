@@ -4,6 +4,7 @@ import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/screens/locations_screen.dart';
 
 import '../support/builders.dart';
+import '../support/field_state.dart';
 import '../support/pump.dart';
 
 void main() {
@@ -39,7 +40,7 @@ void main() {
     testWidgets('the FAB adds a top-level room', (tester) async {
       await pumpLocations(tester);
 
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byKey(const Key('fab_add_place')));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'Piwnica');
       await tester.tap(find.bySemanticsLabel('Save'));
@@ -68,12 +69,12 @@ void main() {
     testWidgets('refuses an empty name', (tester) async {
       await pumpLocations(tester);
 
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byKey(const Key('fab_add_place')));
       await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Give it a name'), findsOneWidget);
+      expect(hasFieldError(tester, find.byType(TextFormField)), isTrue);
       expect(repo.listLocations(), isEmpty);
     });
 
@@ -83,19 +84,19 @@ void main() {
       await repo.createLocation(name: 'Office', now: now);
       await pumpLocations(tester);
 
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byKey(const Key('fab_add_place')));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'office');
       await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.text('There is already a "office" here'), findsOneWidget);
+      expect(hasFieldError(tester, find.byType(TextFormField)), isTrue);
     });
 
     testWidgets('cancelling adds nothing', (tester) async {
       await pumpLocations(tester);
 
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byKey(const Key('fab_add_place')));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'Piwnica');
       await tester.tap(find.bySemanticsLabel('Cancel'));
@@ -133,7 +134,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('already a'), findsNothing);
+      expect(find.byType(TextFormField), findsNothing);
     });
   });
 }

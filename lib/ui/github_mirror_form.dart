@@ -17,6 +17,7 @@ class GitHubMirrorForm extends StatelessWidget {
     required this.pending,
     required this.busy,
     required this.status,
+    required this.statusOk,
     required this.nodeId,
     required this.onConnect,
     required this.onTest,
@@ -43,8 +44,11 @@ class GitHubMirrorForm extends StatelessWidget {
   /// Whether an action is in flight, which disables every button.
   final bool busy;
 
-  /// The last status line, empty when there is nothing to say.
+  /// The last status line, spoken only; empty when there is nothing to say.
   final String status;
+
+  /// Whether the last action worked: a tick, else an error glyph.
+  final bool statusOk;
 
   /// This device's sync node id, shown at the bottom.
   final String nodeId;
@@ -64,6 +68,7 @@ class GitHubMirrorForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = theme.extension<AppStatusColors>()!;
     final device = pending;
     return Scaffold(
       appBar: AppBar(
@@ -75,12 +80,13 @@ class GitHubMirrorForm extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          Text(
-            'The cutover mirror — not recommended once every device has '
-            'moved to Firebase.',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          // Textgate: the "legacy, prefer Firebase" note as a warning glyph.
+          Icon(
+            Icons.warning_amber,
+            color: palette.warning,
+            semanticLabel:
+                'The cutover mirror, not recommended once every device has '
+                'moved to Firebase.',
           ),
           const SizedBox(height: AppSpacing.md),
           TextField(
@@ -101,19 +107,22 @@ class GitHubMirrorForm extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           if (settings?.isConfigured ?? false)
-            Text(
-              'A GitHub token is stored.',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            Icon(
+              Icons.key,
+              color: palette.success,
+              semanticLabel: 'A GitHub token is stored.',
             ),
           if (device != null) ...[
             const SizedBox(height: AppSpacing.sm),
-            SelectableText(
-              'Enter code ${device.userCode} at '
-              '${device.verificationUri}',
-              style: theme.textTheme.titleMedium,
+            // GitHub's own code and URL (platform content), behind glyphs.
+            _glyphRow(
+              Icons.pin_outlined,
+              SelectableText(
+                device.userCode,
+                style: theme.textTheme.titleMedium,
+              ),
             ),
+            _glyphRow(Icons.link, SelectableText(device.verificationUri)),
           ],
           const SizedBox(height: AppSpacing.md),
           FilledButton(
@@ -158,17 +167,35 @@ class GitHubMirrorForm extends StatelessWidget {
           ),
           if (status.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
-            Text(status),
+            Icon(
+              statusOk ? Icons.check_circle : Icons.error,
+              key: const Key('mirror_status'),
+              color: statusOk ? palette.success : theme.colorScheme.error,
+              semanticLabel: status,
+            ),
           ],
           const Divider(),
-          Text(
-            'This device: $nodeId',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          _glyphRow(
+            Icons.smartphone,
+            Text(
+              nodeId,
+              semanticsLabel: 'This device: $nodeId',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+  /// A glyph naming a value, then the value itself.
+  static Widget _glyphRow(IconData icon, Widget value) => Row(
+    children: [
+      Icon(icon, size: 18),
+      const SizedBox(width: AppSpacing.sm),
+      Flexible(child: value),
+    ],
+  );
 }

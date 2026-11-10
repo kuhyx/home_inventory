@@ -10,6 +10,7 @@ import 'package:sync_settings_ui/sync_settings_ui.dart';
 
 import '../support/builders.dart';
 import '../support/file_selector_fake.dart';
+import '../support/no_words.dart';
 import '../support/pump.dart';
 
 void main() {
@@ -54,6 +55,7 @@ void main() {
     expect(find.bySemanticsLabel('Advanced sync (GitHub)'), findsOneWidget);
     expect(find.bySemanticsLabel('Connect GitHub'), findsNothing);
     expect(find.text('Sign in with Google'), findsNothing);
+    expectNoWords(tester);
   });
 
   testWidgets('Tapping "Sync settings" navigates to SyncSettingsScreen', (

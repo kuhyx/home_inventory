@@ -112,15 +112,15 @@ void main() {
       await pumpSheet(tester);
 
       expect(find.bySemanticsLabel('Best before'), findsOneWidget);
-      expect(find.text('Fresh'), findsOneWidget);
-      expect(find.text('Due soon'), findsOneWidget);
-      expect(find.text('Expired'), findsOneWidget);
+      expect(find.bySemanticsLabel('Fresh'), findsOneWidget);
+      expect(find.bySemanticsLabel('Due soon'), findsOneWidget);
+      expect(find.bySemanticsLabel('Expired'), findsOneWidget);
     });
 
     testWidgets('selecting one applies it', (tester) async {
       final popped = await pumpSheet(tester);
 
-      await tester.tap(find.text('Due soon'));
+      await tester.tap(find.bySemanticsLabel('Due soon'));
       await tester.pump();
       await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();
@@ -134,7 +134,7 @@ void main() {
         initial: const ItemFilter(freshness: {FreshnessState.expired}),
       );
 
-      await tester.tap(find.text('Expired'));
+      await tester.tap(find.bySemanticsLabel('Expired'));
       await tester.pump();
       await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();

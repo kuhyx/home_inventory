@@ -17,6 +17,7 @@ import 'package:url_launcher_platform_interface/url_launcher_platform_interface.
 
 import '../support/builders.dart';
 import '../support/github_fake.dart';
+import '../support/no_words.dart';
 import '../support/pump.dart';
 
 /// Records launches instead of opening a browser.
@@ -97,7 +98,9 @@ void main() {
 
     expect(find.text('kuhyx'), findsOneWidget);
     expect(find.text('syncs'), findsOneWidget);
-    expect(find.text('This device: me'), findsOneWidget);
+    expect(find.bySemanticsLabel('This device: me'), findsOneWidget);
+    // Textgate: only the user's own values and this device's id are painted.
+    expectNoWords(tester, content: {'kuhyx', 'syncs', 'me'});
   });
   testWidgets('reports a reachable repo', (tester) async {
     await pumpMirror(tester, GitHubFake().client);
@@ -105,7 +108,9 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Test GitHub connection'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Connected to kuhyx/syncs.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Connected to kuhyx/syncs.'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    expectNoWords(tester, content: {'kuhyx', 'syncs', 'me'});
   });
   testWidgets('reports an unreachable repo without throwing', (tester) async {
     await pumpMirror(tester, GitHubFake(repoExists: false).client);
@@ -113,7 +118,8 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Test GitHub connection'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Cannot reach kuhyx/syncs.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Cannot reach kuhyx/syncs.'), findsOneWidget);
+    expect(find.byIcon(Icons.error), findsOneWidget);
   });
   testWidgets('refuses to sync before a token exists', (tester) async {
     await pumpMirror(tester, GitHubFake().client);
@@ -122,7 +128,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Connect a sync backend in Settings first.'),
+      find.bySemanticsLabel('Connect a sync backend in Settings first.'),
       findsOneWidget,
     );
   });
@@ -165,7 +171,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Connect a sync backend in Settings first.'),
+      find.bySemanticsLabel('Connect a sync backend in Settings first.'),
       findsNothing,
     );
     expect(
@@ -181,7 +187,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Token saved.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Token saved.'), findsOneWidget);
     expect((await SyncSettings.load()).token, 'gho_pasted');
   });
   testWidgets('an empty pasted token does nothing', (tester) async {
@@ -190,6 +196,6 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Token saved.'), findsNothing);
+    expect(find.bySemanticsLabel('Token saved.'), findsNothing);
   });
 }

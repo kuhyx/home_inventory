@@ -104,7 +104,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('network is down'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('network is down')), findsOneWidget);
   });
   group('device flow', () {
     http.Client authClient({String? token, String? error}) =>
@@ -140,7 +140,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('ABCD-1234'), findsNothing);
-      expect(find.text('Connected to GitHub.'), findsOneWidget);
+      expect(find.bySemanticsLabel('Connected to GitHub.'), findsOneWidget);
       expect((await SyncSettings.load()).token, 'gho_from_flow');
       expect(launcher.launched, ['https://github.com/login/device']);
     });
@@ -151,7 +151,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel('Connect GitHub'));
       await tester.pumpAndSettle();
 
-      expect(find.text('declined'), findsOneWidget);
+      expect(find.bySemanticsLabel('declined'), findsOneWidget);
       expect((await SyncSettings.load()).token, isEmpty);
     });
 
@@ -166,7 +166,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel('Connect GitHub'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Connected to GitHub.'), findsOneWidget);
+      expect(find.bySemanticsLabel('Connected to GitHub.'), findsOneWidget);
       expect((await SyncSettings.load()).token, 'gho_from_flow');
     });
 
@@ -177,7 +177,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel('Connect GitHub'));
       await tester.pumpAndSettle();
 
-      expect(find.text('No client id configured.'), findsOneWidget);
+      expect(find.bySemanticsLabel('No client id configured.'), findsOneWidget);
     });
   });
 }

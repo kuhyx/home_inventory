@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/location_tree.dart';
 import 'package:home_inventory/ui/empty_state.dart';
+import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/location_picker.dart';
 import 'package:home_inventory/ui/place_row.dart';
 import 'package:home_inventory/ui/theme.dart';
@@ -63,7 +64,10 @@ class _LocationsScreenState extends State<LocationsScreen> {
   Future<void> _addPlace({String? parentId}) async {
     final name = await _promptForName(
       context,
-      title: parentId == null ? '' : 'New place inside',
+      glyph: parentId == null
+          ? Icons.add_home_outlined
+          : Icons.create_new_folder_outlined,
+      spoken: parentId == null ? 'New room' : 'New place inside',
       parentId: parentId,
     );
     if (name == null) return;
@@ -79,7 +83,8 @@ class _LocationsScreenState extends State<LocationsScreen> {
   Future<void> _rename(LocationTreeNode node) async {
     final name = await _promptForName(
       context,
-      title: '',
+      glyph: Icons.edit,
+      spoken: 'Rename',
       parentId: node.location.parentId,
       initial: node.name,
       ignoringId: node.id,
@@ -166,8 +171,8 @@ class _LocationsScreenState extends State<LocationsScreen> {
           if (roots.isEmpty) {
             return const EmptyState(
               icon: Icons.room_preferences_outlined,
-              title: '',
-              message: '',
+              badge: Icons.add,
+              semanticLabel: 'No places yet',
             );
           }
           final rows = _visibleRows(roots);
@@ -198,7 +203,8 @@ class _LocationsScreenState extends State<LocationsScreen> {
 
   Future<String?> _promptForName(
     BuildContext context, {
-    required String title,
+    required IconData glyph,
+    required String spoken,
     required String? parentId,
     String? initial,
     String? ignoringId,
@@ -208,9 +214,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: title.isEmpty
-            ? const Icon(Icons.edit, semanticLabel: '')
-            : Text(title),
+        title: Icon(glyph, semanticLabel: spoken),
         content: Form(
           key: formKey,
           child: TextFormField(
@@ -221,7 +225,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
             ),
             validator: (value) {
               final name = (value ?? '').trim();
-              if (name.isEmpty) return 'Give it a name';
+              if (name.isEmpty) return invalidField;
               // Sibling names must stay unique: ids are derived from
               // (parent, folded name), so two "Shelf" rows under one cupboard
               // would collapse onto a single record.
@@ -230,7 +234,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
                 name,
                 ignoringId: ignoringId,
               )) {
-                return 'There is already a "$name" here';
+                return invalidField;
               }
               return null;
             },

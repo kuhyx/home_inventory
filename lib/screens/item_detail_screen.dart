@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
+import 'package:home_inventory/models/barcode_link.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/screens/item_form_screen.dart';
 import 'package:home_inventory/ui/code_prompt.dart';
@@ -89,6 +90,7 @@ class _DetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     final hint = repository.rateHint(item.id, now: clock());
     final history = repository.historyFor(item.id).reversed.toList();
     // Resolved here rather than on the model: walking an arbitrarily deep
@@ -131,12 +133,20 @@ class _DetailBody extends StatelessWidget {
           Center(child: StockBadge(state: item.stockState)),
           if (hint != null) ...[
             const SizedBox(height: AppSpacing.sm),
-            Center(
-              child: Text(
-                hint.label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+            // Hourglass + days: the forecast without the sentence.
+            Semantics(
+              label: hint.label,
+              excludeSemantics: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.hourglass_bottom, size: 16, color: muted),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    hint.daysLeft >= 1 ? '~${hint.daysLeft}' : '<1',
+                    style: theme.textTheme.labelMedium?.copyWith(color: muted),
+                  ),
+                ],
               ),
             ),
           ],
@@ -173,9 +183,10 @@ class _DetailBody extends StatelessWidget {
               // The amount is the point of the mapping, so it is on the row
               // rather than behind a tap: two codes for the same flour that
               // differ only in bag size are otherwise indistinguishable.
+              // "+N unit" after the code reads as "each scan adds N".
               subtitle: Text(
-                '+${formatQuantity(link.amount)}'
-                '${link.unit.isEmpty ? '' : ' ${link.unit}'} per scan',
+                _perScan(link),
+                semanticsLabel: '${_perScan(link)} per scan',
               ),
               trailing: IconButton(
                 key: const Key('unlink-barcode'),
@@ -192,7 +203,8 @@ class _DetailBody extends StatelessWidget {
             for (final entry in history)
               ListTile(
                 dense: true,
-                title: Text(_describe(entry)),
+                leading: Icon(_glyph(entry.source)),
+                title: Text(_signed(entry), semanticsLabel: _describe(entry)),
                 subtitle: Text(
                   '${entry.at.year}-${_two(entry.at.month)}-'
                   '${_two(entry.at.day)}',
@@ -206,6 +218,25 @@ class _DetailBody extends StatelessWidget {
 
   static String _two(int value) => value.toString().padLeft(2, '0');
 
+  /// Glyph per history source: minus for use, plus for restock, a pencil
+  /// for a recount, a flag for the starting amount.
+  static IconData _glyph(AdjustmentSource source) => switch (source) {
+    AdjustmentSource.use => Icons.remove_circle_outline,
+    AdjustmentSource.restock => Icons.add_circle_outline,
+    AdjustmentSource.correction => Icons.edit_outlined,
+    AdjustmentSource.initial => Icons.flag_outlined,
+  };
+
+  /// What one scan of [link] adds, e.g. "+500 g".
+  static String _perScan(BarcodeLink link) =>
+      '+${formatQuantity(link.amount)}'
+      '${link.unit.isEmpty ? '' : ' ${link.unit}'}';
+
+  /// The change as a signed number, the only painted part of a history row.
+  static String _signed(Adjustment entry) =>
+      '${entry.delta < 0 ? '−' : '+'}${formatQuantity(entry.delta.abs())}';
+
+  /// Spoken-only sentence for a history row.
   static String _describe(Adjustment entry) {
     final amount = formatQuantity(entry.delta.abs());
     return switch (entry.source) {

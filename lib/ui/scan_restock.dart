@@ -31,10 +31,16 @@ Future<void> promptScanRestock(
   );
   messenger.showSnackBar(
     SnackBar(
-      content: Text(
-        item == null
-            ? 'No item is linked to ${entry.code}'
-            : 'Restocked ${item.name}',
+      // Textgate: link-off + the typed code, or a tick + the item's name.
+      content: Row(
+        children: [
+          Icon(
+            item == null ? Icons.link_off : Icons.check,
+            semanticLabel: item == null ? 'No item is linked' : 'Restocked',
+          ),
+          const SizedBox(width: 8),
+          Flexible(child: Text(item == null ? entry.code : item.name)),
+        ],
       ),
     ),
   );
