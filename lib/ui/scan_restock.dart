@@ -18,7 +18,11 @@ Future<void> promptScanRestock(
   DateTime Function()? now,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
-  final entry = await promptForCode(context, title: 'Scan to restock');
+  final entry = await promptForCode(
+    context,
+    icon: Icons.qr_code_scanner,
+    semanticLabel: 'Scan to restock',
+  );
   if (entry == null) return;
   final item = await repository.applyScan(
     entry.code,

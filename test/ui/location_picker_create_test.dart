@@ -36,7 +36,7 @@ void main() {
                 await showLocationPicker(
                   context,
                   repository: repo,
-                  title: 'Pick a place',
+                  semanticLabel: 'Pick a place',
                   excludeSubtreeOf: excludeSubtreeOf,
                   rootLabel: rootLabel,
                   allowCreate: allowCreate,
@@ -120,7 +120,7 @@ void main() {
 
       expect(chosen, isEmpty);
       expect(repo.listLocations(), isEmpty);
-      expect(find.text('Pick a place'), findsOneWidget);
+      expect(find.bySemanticsLabel('Pick a place'), findsOneWidget);
     });
   });
 }

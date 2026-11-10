@@ -63,7 +63,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(0), 'USB-C cable');
     await tester.enterText(find.byType(TextFormField).at(1), '4');
     await pickPlace(tester, 'Pantry');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     final item = repo.listItems().single;
@@ -81,7 +81,7 @@ void main() {
     await pumpSheet(tester);
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Flour');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     final item = repo.listItems().single;
@@ -90,7 +90,7 @@ void main() {
   testWidgets('refuses to save without a name', (tester) async {
     await pumpSheet(tester);
 
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     expect(find.text('Give it a name'), findsOneWidget);
@@ -101,7 +101,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Thing');
     await tester.enterText(find.byType(TextFormField).at(1), 'lots');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     expect(find.text('Quantity must be a number'), findsOneWidget);
@@ -112,7 +112,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Thing');
     await tester.enterText(find.byType(TextFormField).at(1), '-2');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     expect(find.text('Quantity must be a number'), findsOneWidget);
@@ -122,7 +122,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Thing');
     await tester.enterText(find.byType(TextFormField).at(1), '');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     expect(repo.listItems().single.quantity, 1);
@@ -132,7 +132,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Flour');
     await tester.enterText(find.byType(TextFormField).at(1), '2,5');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     expect(repo.listItems().single.quantity, 2.5);
@@ -145,7 +145,7 @@ void main() {
     await seedPlaces();
     await tester.enterText(find.byType(TextFormField).at(0), 'First');
     await pickPlace(tester, 'Pantry');
-    await tester.tap(find.text('Save & add another'));
+    await tester.tap(find.bySemanticsLabel('Save & add another'));
     await tester.pumpAndSettle();
 
     expect(repo.listItems(), hasLength(1));
@@ -158,7 +158,7 @@ void main() {
   ) async {
     await pumpSheet(tester);
 
-    await tester.tap(find.text('Save & add another'));
+    await tester.tap(find.bySemanticsLabel('Save & add another'));
     await tester.pump();
 
     expect(repo.listItems(), isEmpty);

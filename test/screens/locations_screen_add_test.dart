@@ -42,7 +42,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'Piwnica');
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
       expect(find.text('Piwnica'), findsOneWidget);
@@ -55,10 +55,10 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Add a place inside'));
+      await tester.tap(find.bySemanticsLabel('Add a place inside'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'Szuflada');
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
       // Already expanded, or the user cannot see what they just made.
@@ -70,7 +70,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
       expect(find.text('Give it a name'), findsOneWidget);
@@ -86,7 +86,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'office');
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
       expect(find.text('There is already a "office" here'), findsOneWidget);
@@ -98,7 +98,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'Piwnica');
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.bySemanticsLabel('Cancel'));
       await tester.pumpAndSettle();
 
       expect(repo.listLocations(), isEmpty);
@@ -111,10 +111,10 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Rename'));
+      await tester.tap(find.bySemanticsLabel('Rename'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), 'Biuro');
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
       expect(find.text('Biuro'), findsOneWidget);
@@ -128,9 +128,9 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Rename'));
+      await tester.tap(find.bySemanticsLabel('Rename'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.bySemanticsLabel('Save'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('already a'), findsNothing);

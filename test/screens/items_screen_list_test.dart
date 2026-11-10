@@ -122,7 +122,7 @@ void main() {
     expect(find.text('korytarz'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Buty');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pumpAndSettle();
 
     expect(repo.listItems().single.locationId, room.id);

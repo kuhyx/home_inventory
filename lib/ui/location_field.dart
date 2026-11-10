@@ -62,7 +62,7 @@ class LocationField extends StatelessWidget {
     final choice = await showLocationPicker(
       context,
       repository: repository,
-      title: 'Where is it?',
+      semanticLabel: 'Where is it?',
       rootLabel: 'Not filed anywhere',
       allowCreate: true,
       // A typed name lands inside whatever is selected now, so adding a shelf
@@ -76,11 +76,27 @@ class LocationField extends StatelessWidget {
     final created = choice.location;
     if (!choice.created || created == null) return;
     final parentId = created.parentId;
-    final where = parentId == null
+    // textgate: an icon plus the user's own place names, no sentence.
+    final semanticWhere = parentId == null
         ? 'as a new room'
         : 'in ${repository.pathLabel(parentId)}';
     messenger.showSnackBar(
-      SnackBar(content: Text('Created "${created.name}" $where')),
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.add_location_alt_outlined,
+              semanticLabel: 'Created "${created.name}" $semanticWhere',
+            ),
+            const SizedBox(width: 8),
+            Text(created.name),
+            if (parentId != null) ...[
+              const Icon(Icons.subdirectory_arrow_left),
+              Flexible(child: Text(repository.pathLabel(parentId))),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -91,18 +107,22 @@ class LocationField extends StatelessWidget {
     return InkWell(
       onTap: () => _pick(context),
       child: InputDecorator(
+        // textgate: the field is named by a place icon (spoken label only),
+        // and "not filed" is a faded inbox icon instead of a sentence.
         decoration: InputDecoration(
-          labelText: label,
+          prefixIcon: Icon(Icons.place_outlined, semanticLabel: label),
           suffixIcon: const Icon(Icons.arrow_drop_down),
         ),
-        child: Text(
-          _value,
-          style: filed
-              ? theme.textTheme.bodyLarge
-              : theme.textTheme.bodyLarge?.copyWith(
+        child: filed
+            ? Text(_value, style: theme.textTheme.bodyLarge)
+            : Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Icon(
+                  Icons.inbox_outlined,
                   color: theme.colorScheme.onSurfaceVariant,
+                  semanticLabel: _value,
                 ),
-        ),
+              ),
       ),
     );
   }

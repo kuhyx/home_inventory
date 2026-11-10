@@ -26,7 +26,7 @@ void main() {
   }
 
   Future<void> openSellTab(WidgetTester tester) async {
-    await tester.tap(find.text('To sell'));
+    await tester.tap(find.byKey(const Key('tab_to_sell')));
     await tester.pumpAndSettle();
   }
 
@@ -101,7 +101,11 @@ void main() {
       repo.historyFor('a').map((entry) => entry.source),
       contains(AdjustmentSource.restock),
     );
-    expect(find.text('Bought 1 Flour'), findsOneWidget);
+    final snack = find.byKey(const Key('snack_bought'));
+    expect(
+      find.descendant(of: snack, matching: find.text('Flour')),
+      findsOneWidget,
+    );
   });
 
   // The restocked item drops off the list, so the snackbar is the only
@@ -114,7 +118,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.add_shopping_cart));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Undo'));
+    await tester.tap(find.text('↶'));
     await tester.pumpAndSettle();
 
     expect(repo.item('a')!.quantity, 0);

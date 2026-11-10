@@ -72,7 +72,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
     await tester.pump();
-    await tester.tap(find.text('Apply'));
+    await tester.tap(find.bySemanticsLabel('Apply'));
     await tester.pumpAndSettle();
 
     expect(find.text('1'), findsOneWidget);

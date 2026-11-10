@@ -18,17 +18,27 @@ typedef CodeEntry = ({String code, double amount});
 /// protecting.
 Future<CodeEntry?> promptForCode(
   BuildContext context, {
-  required String title,
+  required IconData icon,
+  required String semanticLabel,
   bool withAmount = false,
 }) => showDialog<CodeEntry>(
   context: context,
-  builder: (_) => _CodeDialog(title: title, withAmount: withAmount),
+  builder: (_) => _CodeDialog(
+    icon: icon,
+    semanticLabel: semanticLabel,
+    withAmount: withAmount,
+  ),
 );
 
 class _CodeDialog extends StatefulWidget {
-  const _CodeDialog({required this.title, required this.withAmount});
+  const _CodeDialog({
+    required this.icon,
+    required this.semanticLabel,
+    required this.withAmount,
+  });
 
-  final String title;
+  final IconData icon;
+  final String semanticLabel;
   final bool withAmount;
 
   @override
@@ -61,32 +71,49 @@ class _CodeDialogState extends State<_CodeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.title),
+    title: Icon(widget.icon, semanticLabel: widget.semanticLabel),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         TextField(
+          key: const Key('code_prompt_barcode'),
           controller: _code,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Barcode'),
+          decoration: const InputDecoration(
+            prefixIcon: Icon(
+              Icons.qr_code_scanner_outlined,
+              semanticLabel: 'Barcode',
+            ),
+          ),
           onSubmitted: (_) => _submit(),
         ),
         if (widget.withAmount) ...[
           const SizedBox(height: AppSpacing.md),
           TextField(
+            key: const Key('code_prompt_amount'),
             controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'One scan is worth'),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(
+                Icons.attach_money,
+                semanticLabel: 'One scan is worth',
+              ),
+            ),
           ),
         ],
       ],
     ),
     actions: [
-      TextButton(
+      IconButton(
+        key: const Key('code_prompt_cancel'),
+        icon: const Icon(Icons.close, semanticLabel: 'Cancel'),
         onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Cancel'),
       ),
-      FilledButton(onPressed: _submit, child: const Text('OK')),
+      IconButton(
+        key: const Key('code_prompt_ok'),
+        icon: const Icon(Icons.check, semanticLabel: 'OK'),
+        onPressed: _submit,
+      ),
     ],
   );
 }

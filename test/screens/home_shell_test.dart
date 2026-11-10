@@ -56,10 +56,10 @@ void main() {
   testWidgets('switches to the shopping tab', (tester) async {
     await pumpShell(tester);
 
-    await tester.tap(find.text('Shopping'));
+    await tester.tap(find.byIcon(Icons.shopping_cart_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('To buy'), findsOneWidget);
+    expect(find.byIcon(Icons.shopping_bag_outlined), findsOneWidget);
   });
 
   testWidgets('tapping a place shows it on the items tab', (tester) async {
@@ -73,7 +73,7 @@ void main() {
     );
     await pumpShell(tester);
 
-    await tester.tap(find.text('Locations'));
+    await tester.tap(find.byIcon(Icons.room_preferences_outlined));
     await tester.pumpAndSettle();
     await tester.tap(
       find.widgetWithIcon(IconButton, Icons.arrow_forward).first,
@@ -100,7 +100,7 @@ void main() {
     );
     await pumpShell(tester);
 
-    await tester.tap(find.text('Locations'));
+    await tester.tap(find.byIcon(Icons.room_preferences_outlined));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Office'));
     await tester.pumpAndSettle();
@@ -132,7 +132,7 @@ void main() {
     await repo.upsert(itemFixture(id: 'c', name: 'Flour'));
     await pumpShell(tester);
 
-    await tester.tap(find.text('Locations'));
+    await tester.tap(find.byIcon(Icons.room_preferences_outlined));
     await tester.pumpAndSettle();
     await tester.tap(
       find.widgetWithIcon(IconButton, Icons.arrow_forward).first,

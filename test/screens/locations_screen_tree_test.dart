@@ -38,7 +38,7 @@ void main() {
   testWidgets('shows the empty state with nothing filed', (tester) async {
     await pumpLocations(tester);
 
-    expect(find.text('No locations yet'), findsOneWidget);
+    expect(find.byIcon(Icons.room_preferences_outlined), findsOneWidget);
   });
   testWidgets('lists places with their item counts', (tester) async {
     final office = await repo.createLocation(name: 'Office', now: now);

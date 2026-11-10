@@ -61,7 +61,7 @@ void main() {
     expect(find.text('Kitchen › Pantry'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Rice');
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pump();
 
     expect(repo.listItems().single.locationId, pantry);
@@ -84,7 +84,7 @@ void main() {
   ) async {
     await pumpSheet(tester);
 
-    expect(find.text('Not filed anywhere'), findsOneWidget);
+    expect(find.bySemanticsLabel('Not filed anywhere'), findsOneWidget);
   });
   testWidgets('creates a place typed into the picker, and says so', (
     tester,
@@ -98,10 +98,14 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    expect(find.text('Created "korytarz" as a new room'), findsOneWidget);
+    expect(
+      // The snackbar merges the icon's spoken label with the place name.
+      find.bySemanticsLabel(RegExp('^Created "korytarz" as a new room')),
+      findsOneWidget,
+    );
     expect(find.text('korytarz'), findsWidgets);
 
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.bySemanticsLabel('Save'));
     await tester.pumpAndSettle();
 
     final item = repo.listItems().single;
@@ -122,7 +126,10 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    expect(find.text('Created "szafka z lewej" in korytarz'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('^Created "szafka z lewej" in korytarz')),
+      findsOneWidget,
+    );
     expect(find.text('korytarz › szafka z lewej'), findsOneWidget);
   });
   testWidgets('typing an existing name just picks it', (tester) async {

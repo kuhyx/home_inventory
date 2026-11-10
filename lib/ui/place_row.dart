@@ -81,12 +81,16 @@ class PlaceRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
+            key: const Key('btn_show_everything'),
             onPressed: onShow,
-            icon: const Icon(Icons.arrow_forward),
-            tooltip: 'Show everything here',
+            icon: const Icon(
+              Icons.arrow_forward,
+              semanticLabel: 'Show everything here',
+            ),
           ),
           PopupMenuButton<String>(
-            tooltip: 'More',
+            key: const Key('menu_more'),
+            icon: const Icon(Icons.more_vert, semanticLabel: 'More'),
             onSelected: (value) => switch (value) {
               'add' => onAddChild(),
               'rename' => onRename(),
@@ -94,10 +98,25 @@ class PlaceRow extends StatelessWidget {
               _ => onDelete(),
             },
             itemBuilder: (context) => const [
-              PopupMenuItem(value: 'add', child: Text('Add a place inside')),
-              PopupMenuItem(value: 'rename', child: Text('Rename')),
-              PopupMenuItem(value: 'move', child: Text('Move')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
+              PopupMenuItem(
+                value: 'add',
+                child: Icon(
+                  Icons.add_circle_outline,
+                  semanticLabel: 'Add a place inside',
+                ),
+              ),
+              PopupMenuItem(
+                value: 'rename',
+                child: Icon(Icons.edit, semanticLabel: 'Rename'),
+              ),
+              PopupMenuItem(
+                value: 'move',
+                child: Icon(Icons.change_circle, semanticLabel: 'Move'),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Icon(Icons.delete, semanticLabel: 'Delete'),
+              ),
             ],
           ),
         ],

@@ -50,9 +50,9 @@ void main() {
 
     // The slim screen only links out; neither sync surface's own widgets
     // should be inlined here anymore.
-    expect(find.text('Sync settings'), findsOneWidget);
-    expect(find.text('Advanced sync (GitHub)'), findsOneWidget);
-    expect(find.text('Connect GitHub'), findsNothing);
+    expect(find.bySemanticsLabel('Sync settings'), findsOneWidget);
+    expect(find.bySemanticsLabel('Advanced sync (GitHub)'), findsOneWidget);
+    expect(find.bySemanticsLabel('Connect GitHub'), findsNothing);
     expect(find.text('Sign in with Google'), findsNothing);
   });
 
@@ -61,7 +61,7 @@ void main() {
   ) async {
     await pumpSettings(tester);
 
-    await tester.tap(find.text('Sync settings'));
+    await tester.tap(find.bySemanticsLabel('Sync settings'));
     await tester.pumpAndSettle();
 
     expect(find.byType(SyncSettingsScreen), findsOneWidget);
@@ -73,7 +73,7 @@ void main() {
     (tester) async {
       await pumpSettings(tester);
 
-      await tester.tap(find.text('Advanced sync (GitHub)'));
+      await tester.tap(find.bySemanticsLabel('Advanced sync (GitHub)'));
       await tester.pumpAndSettle();
 
       expect(find.byType(GitHubMirrorScreen), findsOneWidget);
@@ -129,7 +129,7 @@ void main() {
       selector.saveLocation = FileSaveLocation(path);
       await pumpSettings(tester);
 
-      await tester.tap(find.text('Sync settings'));
+      await tester.tap(find.bySemanticsLabel('Sync settings'));
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Export inventory');
 
@@ -144,7 +144,7 @@ void main() {
         selector.saveLocation = null;
         await pumpSettings(tester);
 
-        await tester.tap(find.text('Sync settings'));
+        await tester.tap(find.bySemanticsLabel('Sync settings'));
         await tester.pumpAndSettle();
         await tapAndFlush(tester, 'Export inventory');
 
@@ -167,7 +167,7 @@ void main() {
       selector.fileToOpen = XFile(path);
       await pumpSettings(tester);
 
-      await tester.tap(find.text('Sync settings'));
+      await tester.tap(find.bySemanticsLabel('Sync settings'));
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 
@@ -181,7 +181,7 @@ void main() {
       selector.fileToOpen = null;
       await pumpSettings(tester);
 
-      await tester.tap(find.text('Sync settings'));
+      await tester.tap(find.bySemanticsLabel('Sync settings'));
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 
@@ -203,7 +203,7 @@ void main() {
       selector.fileToOpen = XFile(path);
       await pumpSettings(tester);
 
-      await tester.tap(find.text('Sync settings'));
+      await tester.tap(find.bySemanticsLabel('Sync settings'));
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 
@@ -219,7 +219,7 @@ void main() {
       selector.fileToOpen = XFile(path);
       await pumpSettings(tester);
 
-      await tester.tap(find.text('Sync settings'));
+      await tester.tap(find.bySemanticsLabel('Sync settings'));
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 

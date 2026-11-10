@@ -104,7 +104,7 @@ void main() {
       await pumpApp(
         tester,
         Scaffold(
-          body: SuggestField(controller: controller, label: 'Room'),
+          body: SuggestField(controller: controller, semanticLabel: 'Room'),
         ),
       );
 
@@ -123,7 +123,7 @@ void main() {
         Scaffold(
           body: SuggestField(
             controller: controller,
-            label: 'Room',
+            semanticLabel: 'Room',
             suggestions: const ['Kitchen', 'Shed'],
             onChanged: (value) => reported = value,
           ),
@@ -148,7 +148,7 @@ void main() {
             key: formKey,
             child: SuggestField(
               controller: controller,
-              label: 'Name',
+              semanticLabel: 'Name',
               validator: (value) => (value ?? '').isEmpty ? 'Required' : null,
             ),
           ),

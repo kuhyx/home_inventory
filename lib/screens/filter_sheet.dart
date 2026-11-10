@@ -66,7 +66,7 @@ class _FilterSheetState extends State<FilterSheet> {
     final choice = await showLocationPicker(
       context,
       repository: repository,
-      title: 'Show things in',
+      semanticLabel: 'Show things in',
       rootLabel: 'Anywhere',
     );
     if (choice == null) return;
@@ -83,7 +83,6 @@ class _FilterSheetState extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final repository = widget.repository;
     // The place facet is a picker rather than a chip row: at arbitrary depth a
     // flat list of every shelf in the flat is unusable, and the chips could
@@ -101,17 +100,19 @@ class _FilterSheetState extends State<FilterSheet> {
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Text('Filter', style: theme.textTheme.titleMedium),
-                ),
+                const Icon(Icons.filter_list_outlined, semanticLabel: 'Filter'),
                 TextButton(
                   // Clears the facets but keeps the search text: the box is
                   // still visibly full, so wiping it from here would look like
                   // the app lost the query.
+                  key: const Key('clear_all'),
                   onPressed: () => setState(() {
                     _filter = ItemFilter(query: _filter.query);
                   }),
-                  child: const Text('Clear all'),
+                  child: const Icon(
+                    Icons.clear_outlined,
+                    semanticLabel: 'Clear all',
+                  ),
                 ),
               ],
             ),
@@ -121,7 +122,8 @@ class _FilterSheetState extends State<FilterSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ChipGroup(
-                      label: 'Stock',
+                      icon: Icons.inventory_2_outlined,
+                      semanticLabel: 'Stock',
                       chips: [
                         for (final state in StockState.values)
                           FacetChip(
@@ -136,7 +138,8 @@ class _FilterSheetState extends State<FilterSheet> {
                       ],
                     ),
                     ChipGroup(
-                      label: 'Best before',
+                      icon: Icons.event_outlined,
+                      semanticLabel: 'Best before',
                       chips: [
                         for (final state in FreshnessState.values)
                           FacetChip(
@@ -152,7 +155,8 @@ class _FilterSheetState extends State<FilterSheet> {
                       ],
                     ),
                     ChipGroup(
-                      label: 'Flags',
+                      icon: Icons.flag_outlined,
+                      semanticLabel: 'Flags',
                       chips: [
                         for (final flag in ItemFlag.values)
                           FacetChip(
@@ -177,7 +181,8 @@ class _FilterSheetState extends State<FilterSheet> {
                       ),
                     ),
                     ChipGroup(
-                      label: 'Categories',
+                      icon: Icons.category_outlined,
+                      semanticLabel: 'Categories',
                       chips: [
                         for (final category in repository.knownCategories())
                           FacetChip(
@@ -200,8 +205,9 @@ class _FilterSheetState extends State<FilterSheet> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
+                key: const Key('apply'),
                 onPressed: () => Navigator.of(context).pop(_filter),
-                child: const Text('Apply'),
+                child: const Icon(Icons.done_outlined, semanticLabel: 'Apply'),
               ),
             ),
           ],

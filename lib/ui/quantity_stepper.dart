@@ -41,8 +41,7 @@ class QuantityStepper extends StatelessWidget {
       children: [
         IconButton.filledTonal(
           onPressed: quantity <= 0 ? null : onUse,
-          icon: const Icon(Icons.remove),
-          tooltip: 'Used one',
+          icon: const Icon(Icons.remove, semanticLabel: 'Used one'),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -67,8 +66,7 @@ class QuantityStepper extends StatelessWidget {
         ),
         IconButton.filledTonal(
           onPressed: onRestock,
-          icon: const Icon(Icons.add),
-          tooltip: 'Added one',
+          icon: const Icon(Icons.add, semanticLabel: 'Added one'),
         ),
       ],
     );

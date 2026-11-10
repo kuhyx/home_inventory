@@ -67,19 +67,28 @@ class _HomeShellState extends State<HomeShell> {
       onDestinationSelected: (index) => setState(() => _index = index),
       destinations: const [
         NavigationDestination(
-          icon: Icon(Icons.inventory_2_outlined),
-          selectedIcon: Icon(Icons.inventory_2),
-          label: 'Items',
+          icon: Icon(Icons.inventory_2_outlined, semanticLabel: 'Items'),
+          selectedIcon: Icon(Icons.inventory_2, semanticLabel: 'Items'),
+          label: '',
+          tooltip: '',
         ),
         NavigationDestination(
-          icon: Icon(Icons.room_preferences_outlined),
-          selectedIcon: Icon(Icons.room_preferences),
-          label: 'Locations',
+          icon: Icon(
+            Icons.room_preferences_outlined,
+            semanticLabel: 'Locations',
+          ),
+          selectedIcon: Icon(
+            Icons.room_preferences,
+            semanticLabel: 'Locations',
+          ),
+          label: '',
+          tooltip: '',
         ),
         NavigationDestination(
-          icon: Icon(Icons.shopping_cart_outlined),
-          selectedIcon: Icon(Icons.shopping_cart),
-          label: 'Shopping',
+          icon: Icon(Icons.shopping_cart_outlined, semanticLabel: 'Shopping'),
+          selectedIcon: Icon(Icons.shopping_cart, semanticLabel: 'Shopping'),
+          label: '',
+          tooltip: '',
         ),
       ],
     ),

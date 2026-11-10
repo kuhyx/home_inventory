@@ -108,10 +108,10 @@ void main() {
       await repo.linkBarcode(code: '590', itemId: 'flour', amount: 500);
       await pumpList(tester);
 
-      await tester.tap(find.byTooltip('Scan to restock'));
+      await tester.tap(find.bySemanticsLabel('Scan to restock'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).last, '590');
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.bySemanticsLabel('OK'));
       await tester.pumpAndSettle();
 
       expect(repo.item('flour')!.quantity, 501);
@@ -123,10 +123,10 @@ void main() {
     testWidgets('says so when nothing is linked to the code', (tester) async {
       await pumpList(tester);
 
-      await tester.tap(find.byTooltip('Scan to restock'));
+      await tester.tap(find.bySemanticsLabel('Scan to restock'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).last, '590');
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.bySemanticsLabel('OK'));
       await tester.pumpAndSettle();
 
       expect(find.text('No item is linked to 590'), findsOneWidget);
@@ -137,9 +137,9 @@ void main() {
       await repo.linkBarcode(code: '590', itemId: 'flour');
       await pumpList(tester);
 
-      await tester.tap(find.byTooltip('Scan to restock'));
+      await tester.tap(find.bySemanticsLabel('Scan to restock'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.bySemanticsLabel('Cancel'));
       await tester.pumpAndSettle();
 
       expect(repo.item('flour')!.quantity, 1);

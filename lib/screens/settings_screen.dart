@@ -113,14 +113,15 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(
+        title: const Icon(Icons.settings, semanticLabel: 'Settings'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Sync settings'),
-            subtitle: const Text('Firebase sync and inventory backup'),
+            leading: const Icon(Icons.sync, semanticLabel: 'Sync settings'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute(
@@ -134,6 +135,7 @@ class SettingsScreen extends StatelessWidget {
                       googleFirebaseFactory ?? openFirebaseWithGoogle,
                   googleAvailable: googleAvailable ?? googleSignInSupported,
                   backup: BackupSlot(
+                    // Shared sync_settings_ui API; its own buttons render it.
                     label: 'inventory',
                     export: _export,
                     import: _import,
@@ -144,8 +146,10 @@ class SettingsScreen extends StatelessWidget {
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Advanced sync (GitHub)'),
-            subtitle: const Text('Cutover mirror — not recommended'),
+            leading: const Icon(
+              Icons.cloud_sync,
+              semanticLabel: 'Advanced sync (GitHub)',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute(

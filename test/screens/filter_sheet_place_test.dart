@@ -70,7 +70,7 @@ void main() {
     await pumpSheet(tester);
 
     expect(find.text('Rooms'), findsNothing);
-    expect(find.text('Categories'), findsNothing);
+    expect(find.bySemanticsLabel('Categories'), findsNothing);
   });
   testWidgets('stock and flag chips are selectable too', (tester) async {
     final popped = await pumpSheet(tester);
@@ -79,7 +79,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.widgetWithText(FilterChip, 'Sellable'));
     await tester.pump();
-    await tester.tap(find.text('Apply'));
+    await tester.tap(find.bySemanticsLabel('Apply'));
     await tester.pumpAndSettle();
 
     expect(
@@ -109,7 +109,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Office').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Apply'));
+      await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();
 
       expect(popped.single!.locationIds, {office.id, drawer.id});
@@ -131,7 +131,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
-      await tester.tap(find.text('Apply'));
+      await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();
 
       expect(popped.single!.locationIds, isEmpty);
@@ -146,9 +146,9 @@ void main() {
 
       await tester.tap(find.text('Office'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Anywhere').last);
+      await tester.tap(find.bySemanticsLabel('Anywhere').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Apply'));
+      await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();
 
       expect(popped.single!.locationIds, isEmpty);
@@ -162,7 +162,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Apply'));
+      await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();
 
       expect(popped.single!.locationIds, isEmpty);

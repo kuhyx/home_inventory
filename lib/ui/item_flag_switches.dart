@@ -35,15 +35,18 @@ class ItemFlagSwitches extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       SwitchListTile(
+        key: const Key('item_flag_wanted'),
         value: wanted,
         onChanged: onWantedChanged,
-        title: const Text('I want this'),
-        subtitle: const Text('Keeps it on the buy list'),
+        secondary: const Icon(Icons.star_outline),
+        title: const Icon(Icons.star, semanticLabel: 'I want this'),
       ),
       SwitchListTile(
+        key: const Key('item_flag_sellable'),
         value: sellable,
         onChanged: onSellableChanged,
-        title: const Text('I could sell this'),
+        secondary: const Icon(Icons.sell_outlined),
+        title: const Icon(Icons.sell, semanticLabel: 'I could sell this'),
       ),
     ],
   );

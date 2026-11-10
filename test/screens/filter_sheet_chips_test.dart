@@ -67,7 +67,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
     await tester.pump();
-    await tester.tap(find.text('Apply'));
+    await tester.tap(find.bySemanticsLabel('Apply'));
     await tester.pumpAndSettle();
 
     expect(popped.single, const ItemFilter());
@@ -78,7 +78,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilterChip, 'Tools'));
     await tester.pump();
-    await tester.tap(find.text('Apply'));
+    await tester.tap(find.bySemanticsLabel('Apply'));
     await tester.pumpAndSettle();
 
     expect(popped.single, const ItemFilter(categories: {'Tools'}));
@@ -90,9 +90,9 @@ void main() {
       initial: const ItemFilter(query: 'cable', locationIds: {'loc1'}),
     );
 
-    await tester.tap(find.text('Clear all'));
+    await tester.tap(find.bySemanticsLabel('Clear all'));
     await tester.pump();
-    await tester.tap(find.text('Apply'));
+    await tester.tap(find.bySemanticsLabel('Apply'));
     await tester.pumpAndSettle();
 
     expect(popped.single, const ItemFilter(query: 'cable'));
@@ -111,7 +111,7 @@ void main() {
     testWidgets('offers every freshness state', (tester) async {
       await pumpSheet(tester);
 
-      expect(find.text('Best before'), findsOneWidget);
+      expect(find.bySemanticsLabel('Best before'), findsOneWidget);
       expect(find.text('Fresh'), findsOneWidget);
       expect(find.text('Due soon'), findsOneWidget);
       expect(find.text('Expired'), findsOneWidget);
@@ -122,7 +122,7 @@ void main() {
 
       await tester.tap(find.text('Due soon'));
       await tester.pump();
-      await tester.tap(find.text('Apply'));
+      await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();
 
       expect(popped.single!.freshness, {FreshnessState.dueSoon});
@@ -136,7 +136,7 @@ void main() {
 
       await tester.tap(find.text('Expired'));
       await tester.pump();
-      await tester.tap(find.text('Apply'));
+      await tester.tap(find.bySemanticsLabel('Apply'));
       await tester.pumpAndSettle();
 
       expect(popped.single!.freshness, isEmpty);

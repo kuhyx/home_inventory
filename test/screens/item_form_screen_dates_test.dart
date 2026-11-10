@@ -54,7 +54,7 @@ void main() {
   }
 
   Future<void> save(WidgetTester tester) async {
-    final button = find.widgetWithText(FilledButton, 'Save');
+    final button = find.bySemanticsLabel('Save');
     await scrollTo(tester, button);
     await tester.tap(button);
   }
@@ -166,7 +166,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('30'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.bySemanticsLabel('OK'));
       await tester.pumpAndSettle();
 
       expect(textOf(tester, bestBefore), '2026-07-30');
@@ -181,7 +181,7 @@ void main() {
       await scrollTo(tester, find.byIcon(Icons.calendar_today_outlined));
       await tester.tap(find.byIcon(Icons.calendar_today_outlined));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.bySemanticsLabel('Cancel'));
       await tester.pumpAndSettle();
 
       expect(textOf(tester, bestBefore), '2026-08-09');

@@ -36,7 +36,7 @@ void main() {
                 await showLocationPicker(
                   context,
                   repository: repo,
-                  title: 'Pick a place',
+                  semanticLabel: 'Pick a place',
                   excludeSubtreeOf: excludeSubtreeOf,
                   rootLabel: rootLabel,
                   allowCreate: allowCreate,
@@ -58,8 +58,8 @@ void main() {
   testWidgets('shows the title and the root option', (tester) async {
     await pumpPicker(tester);
 
-    expect(find.text('Pick a place'), findsOneWidget);
-    expect(find.text('Top level'), findsOneWidget);
+    expect(find.bySemanticsLabel('Pick a place'), findsOneWidget);
+    expect(find.bySemanticsLabel('Top level'), findsOneWidget);
   });
   testWidgets('says so when there are no places yet', (tester) async {
     await pumpPicker(tester);
@@ -109,7 +109,7 @@ void main() {
     await repo.createLocation(name: 'Korytarz', now: now);
     final chosen = await pumpPicker(tester);
 
-    await tester.tap(find.text('Top level'));
+    await tester.tap(find.bySemanticsLabel('Top level'));
     await tester.pumpAndSettle();
 
     expect(chosen.single, isNotNull);
@@ -128,8 +128,8 @@ void main() {
   testWidgets('honours a custom root label', (tester) async {
     await pumpPicker(tester, rootLabel: 'Anywhere');
 
-    expect(find.text('Anywhere'), findsOneWidget);
-    expect(find.text('Top level'), findsNothing);
+    expect(find.bySemanticsLabel('Anywhere'), findsOneWidget);
+    expect(find.bySemanticsLabel('Top level'), findsNothing);
   });
   group('excludeSubtreeOf', () {
     testWidgets('disables the branch being moved', (tester) async {
@@ -170,7 +170,7 @@ void main() {
 
       // Still open, nothing returned.
       expect(chosen, isEmpty);
-      expect(find.text('Pick a place'), findsOneWidget);
+      expect(find.bySemanticsLabel('Pick a place'), findsOneWidget);
     });
   });
 }

@@ -154,9 +154,9 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
         actions: [
           if (_existing != null)
             IconButton(
+              key: const Key('delete-item'),
               onPressed: _delete,
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Delete',
+              icon: const Icon(Icons.delete_outline, semanticLabel: 'Delete'),
             ),
         ],
       ),
@@ -166,15 +166,18 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
             SuggestField(
+              key: const Key('name-field'),
               controller: _name,
-              label: 'Name',
+              semanticLabel: 'Name',
               validator: (value) =>
                   (value ?? '').trim().isEmpty ? 'Give it a name' : null,
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(
+              key: const Key('quantity-field'),
               controller: _quantity,
-              label: 'Quantity',
+              semanticLabel: 'Quantity',
+              icon: Icons.numbers,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -182,8 +185,10 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(
+              key: const Key('unit-field'),
               controller: _unit,
-              label: 'Unit (blank for a plain count)',
+              semanticLabel: 'Unit (blank for a plain count)',
+              icon: Icons.text_fields,
               suggestions: repo.knownUnits(),
               textCapitalization: TextCapitalization.none,
             ),
@@ -204,14 +209,18 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(
+              key: const Key('category-field'),
               controller: _category,
-              label: 'Category',
+              semanticLabel: 'Category',
+              icon: Icons.category,
               suggestions: repo.knownCategories(),
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(
+              key: const Key('low-stock-field'),
               controller: _lowStockAt,
-              label: 'Warn me at (blank for never)',
+              semanticLabel: 'Warn me at (blank for never)',
+              icon: Icons.warning,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -223,7 +232,12 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
               now: widget.now ?? DateTime.now,
             ),
             const SizedBox(height: AppSpacing.md),
-            SuggestField(controller: _notes, label: 'Notes'),
+            SuggestField(
+              key: const Key('notes-field'),
+              controller: _notes,
+              semanticLabel: 'Notes',
+              icon: Icons.note,
+            ),
             const SizedBox(height: AppSpacing.md),
             ItemFlagSwitches(
               wanted: _wanted,
@@ -232,7 +246,11 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
               onSellableChanged: (value) => setState(() => _sellable = value),
             ),
             const SizedBox(height: AppSpacing.lg),
-            FilledButton(onPressed: _save, child: const Text('Save')),
+            FilledButton(
+              key: const Key('save-button'),
+              onPressed: _save,
+              child: const Icon(Icons.save, semanticLabel: 'Save'),
+            ),
           ],
         ),
       ),

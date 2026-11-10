@@ -146,16 +146,19 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               ),
               const SizedBox(height: AppSpacing.md),
               SuggestField(
+                key: const Key('quick_add_name'),
                 controller: _name,
-                label: 'What is it?',
+                semanticLabel: 'What is it?',
                 autofocus: true,
                 validator: (value) =>
                     (value ?? '').trim().isEmpty ? 'Give it a name' : null,
               ),
               const SizedBox(height: AppSpacing.md),
               SuggestField(
+                key: const Key('quick_add_quantity'),
                 controller: _quantity,
-                label: 'How many?',
+                semanticLabel: 'How many?',
+                icon: Icons.numbers,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -179,15 +182,20 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
+                      key: const Key('quick_add_save_continue'),
                       onPressed: _saveAndContinue,
-                      child: const Text('Save & add another'),
+                      child: const Icon(
+                        Icons.add_circle_outline,
+                        semanticLabel: 'Save & add another',
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: FilledButton(
+                      key: const Key('quick_add_save'),
                       onPressed: _saveAndClose,
-                      child: const Text('Save'),
+                      child: const Icon(Icons.save, semanticLabel: 'Save'),
                     ),
                   ),
                 ],

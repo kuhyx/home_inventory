@@ -98,9 +98,9 @@ void main() {
     await pumpMirror(tester, github.client);
 
     await tester.enterText(find.byType(TextField).last, 'gho_pasted');
-    await tester.tap(find.text('Save token'));
+    await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sync now'));
+    await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
     expect(find.text('Synced via GitHub — 1 item.'), findsOneWidget);
@@ -150,9 +150,9 @@ void main() {
       firebaseFactory: () async => firebase,
     );
     await tester.enterText(find.byType(TextField).last, 'gho_pasted');
-    await tester.tap(find.text('Save token'));
+    await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sync now'));
+    await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
     expect(find.text('Synced via Firebase — 1 item.'), findsOneWidget);
@@ -172,9 +172,9 @@ void main() {
     await pumpMirror(tester, github.client);
 
     await tester.enterText(find.byType(TextField).last, 'gho_pasted');
-    await tester.tap(find.text('Save token'));
+    await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sync now'));
+    await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
     // A failed sync must never take the app down — it becomes a message.

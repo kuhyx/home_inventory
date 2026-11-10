@@ -50,7 +50,7 @@ void main() {
 
     await pumpDetail(tester);
 
-    expect(find.text('History'), findsNothing);
+    expect(find.bySemanticsLabel('History'), findsNothing);
   });
   testWidgets('shows no rate hint without enough usage', (tester) async {
     await repo.upsert(itemFixture(quantity: 5, updatedAt: at));
@@ -113,11 +113,11 @@ void main() {
       await repo.upsert(itemFixture(id: 'i1', unit: 'g'));
       await pumpDetail(tester);
 
-      await tester.tap(find.byTooltip('Link a barcode'));
+      await tester.tap(find.bySemanticsLabel('Link a barcode'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, '590');
       await tester.enterText(find.byType(TextField).last, '500');
-      await tester.tap(find.text('OK'));
+      await tester.tap(find.bySemanticsLabel('OK'));
       await tester.pumpAndSettle();
 
       final link = repo.barcodeFor('590')!;
@@ -130,9 +130,9 @@ void main() {
       await repo.upsert(itemFixture(id: 'i1'));
       await pumpDetail(tester);
 
-      await tester.tap(find.byTooltip('Link a barcode'));
+      await tester.tap(find.bySemanticsLabel('Link a barcode'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.bySemanticsLabel('Cancel'));
       await tester.pumpAndSettle();
 
       expect(repo.barcodesFor('i1'), isEmpty);
@@ -143,7 +143,7 @@ void main() {
       await repo.linkBarcode(code: '590', itemId: 'i1');
       await pumpDetail(tester);
 
-      await tester.tap(find.byTooltip('Unlink'));
+      await tester.tap(find.bySemanticsLabel('Unlink'));
       await tester.pumpAndSettle();
 
       expect(repo.barcodesFor('i1'), isEmpty);

@@ -65,7 +65,8 @@ class _DetailBody extends StatelessWidget {
   Future<void> _addBarcode(BuildContext context) async {
     final entry = await promptForCode(
       context,
-      title: 'Link a barcode',
+      icon: Icons.link,
+      semanticLabel: 'Link a barcode',
       withAmount: true,
     );
     if (entry == null) return;
@@ -101,9 +102,9 @@ class _DetailBody extends StatelessWidget {
         title: Text(item.name),
         actions: [
           IconButton(
+            key: const Key('edit-button'),
             onPressed: () => _edit(context),
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
+            icon: const Icon(Icons.edit_outlined, semanticLabel: 'Edit'),
           ),
         ],
       ),
@@ -158,11 +159,11 @@ class _DetailBody extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.qr_code_2_outlined),
-            title: const Text('Barcodes'),
+            title: const Icon(Icons.qr_code, semanticLabel: 'Barcodes'),
             trailing: IconButton(
+              key: const Key('add-barcode'),
               onPressed: () => _addBarcode(context),
-              icon: const Icon(Icons.add_link),
-              tooltip: 'Link a barcode',
+              icon: const Icon(Icons.add_link, semanticLabel: 'Link a barcode'),
             ),
           ),
           for (final link in repository.barcodesFor(item.id))
@@ -177,16 +178,16 @@ class _DetailBody extends StatelessWidget {
                 '${link.unit.isEmpty ? '' : ' ${link.unit}'} per scan',
               ),
               trailing: IconButton(
+                key: const Key('unlink-barcode'),
                 onPressed: () => repository.unlinkBarcode(link.code),
-                icon: const Icon(Icons.link_off),
-                tooltip: 'Unlink',
+                icon: const Icon(Icons.link_off, semanticLabel: 'Unlink'),
               ),
             ),
           if (history.isNotEmpty) ...[
             const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              child: Text('History', style: theme.textTheme.titleMedium),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Icon(Icons.history, semanticLabel: 'History'),
             ),
             for (final entry in history)
               ListTile(

@@ -223,8 +223,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _add,
-        tooltip: 'Add an item',
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, semanticLabel: 'Add an item'),
       ),
     );
   }

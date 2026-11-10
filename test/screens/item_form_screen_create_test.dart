@@ -54,13 +54,13 @@ void main() {
   }
 
   Future<void> save(WidgetTester tester) async {
-    final button = find.widgetWithText(FilledButton, 'Save');
+    final button = find.bySemanticsLabel('Save');
     await scrollTo(tester, button);
     await tester.tap(button);
   }
 
   Future<void> toggle(WidgetTester tester, String label) async {
-    await tester.tap(find.text(label));
+    await tester.tap(find.bySemanticsLabel(label));
     await tester.pump();
   }
 

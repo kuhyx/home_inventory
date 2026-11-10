@@ -18,7 +18,8 @@ void main() {
             onPressed: () async => results.add(
               await promptForCode(
                 context,
-                title: 'Scan',
+                icon: Icons.qr_code_scanner,
+                semanticLabel: 'Scan',
                 withAmount: withAmount,
               ),
             ),
@@ -36,7 +37,7 @@ void main() {
     final results = await open(tester);
 
     await tester.enterText(find.byType(TextField), '590');
-    await tester.tap(find.text('OK'));
+    await tester.tap(find.bySemanticsLabel('OK'));
     await tester.pumpAndSettle();
 
     expect(results.single!.code, '590');
@@ -54,7 +55,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, '590');
     await tester.enterText(find.byType(TextField).last, '500');
-    await tester.tap(find.text('OK'));
+    await tester.tap(find.bySemanticsLabel('OK'));
     await tester.pumpAndSettle();
 
     expect(results.single!.amount, 500);
@@ -67,7 +68,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, '590');
     await tester.enterText(find.byType(TextField).last, 'lots');
-    await tester.tap(find.text('OK'));
+    await tester.tap(find.bySemanticsLabel('OK'));
     await tester.pumpAndSettle();
 
     expect(results.single!.amount, 1);
@@ -86,7 +87,7 @@ void main() {
   testWidgets('a blank code comes back as nothing', (tester) async {
     final results = await open(tester);
 
-    await tester.tap(find.text('OK'));
+    await tester.tap(find.bySemanticsLabel('OK'));
     await tester.pumpAndSettle();
 
     expect(results.single, isNull);
@@ -96,7 +97,7 @@ void main() {
     final results = await open(tester);
 
     await tester.enterText(find.byType(TextField), '590');
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.bySemanticsLabel('Cancel'));
     await tester.pumpAndSettle();
 
     expect(results.single, isNull);

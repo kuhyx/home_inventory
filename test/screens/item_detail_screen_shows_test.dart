@@ -118,7 +118,7 @@ void main() {
 
     await pumpDetail(tester);
 
-    expect(find.text('History'), findsOneWidget);
+    expect(find.bySemanticsLabel('History'), findsOneWidget);
     expect(find.text('Used 2'), findsOneWidget);
     expect(find.text('Added 10 to start'), findsOneWidget);
   });

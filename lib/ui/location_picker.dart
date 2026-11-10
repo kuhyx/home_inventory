@@ -46,7 +46,7 @@ class LocationChoice {
 Future<LocationChoice?> showLocationPicker(
   BuildContext context, {
   required ItemRepository repository,
-  required String title,
+  required String semanticLabel,
   String? excludeSubtreeOf,
   String rootLabel = 'Top level',
   bool allowCreate = false,
@@ -65,7 +65,7 @@ Future<LocationChoice?> showLocationPicker(
     useSafeArea: true,
     builder: (context) => _LocationPickerSheet(
       repository: repository,
-      title: title,
+      semanticLabel: semanticLabel,
       blocked: blocked,
       rootLabel: rootLabel,
       allowCreate: allowCreate,
@@ -78,7 +78,7 @@ Future<LocationChoice?> showLocationPicker(
 class _LocationPickerSheet extends StatefulWidget {
   const _LocationPickerSheet({
     required this.repository,
-    required this.title,
+    required this.semanticLabel,
     required this.blocked,
     required this.rootLabel,
     required this.allowCreate,
@@ -87,7 +87,7 @@ class _LocationPickerSheet extends StatefulWidget {
   });
 
   final ItemRepository repository;
-  final String title;
+  final String semanticLabel;
   final Set<String> blocked;
   final String rootLabel;
   final bool allowCreate;
@@ -137,7 +137,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final repository = widget.repository;
-    final title = widget.title;
+    final title = widget.semanticLabel;
     final blocked = widget.blocked;
     final rootLabel = widget.rootLabel;
     final rows = <LocationTreeNode>[];
@@ -163,11 +163,11 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: theme.textTheme.titleMedium),
+            Icon(Icons.location_on_outlined, semanticLabel: title),
             const SizedBox(height: AppSpacing.sm),
             ListTile(
               leading: const Icon(Icons.home_outlined),
-              title: Text(rootLabel),
+              title: Icon(Icons.inbox_outlined, semanticLabel: rootLabel),
               onTap: () =>
                   Navigator.of(context).pop(const LocationChoice(null)),
             ),
@@ -214,8 +214,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                   labelText: _createLabel,
                   suffixIcon: IconButton(
                     onPressed: _create,
-                    icon: const Icon(Icons.add),
-                    tooltip: 'Create it',
+                    icon: const Icon(Icons.add, semanticLabel: 'Create it'),
                   ),
                 ),
                 onSubmitted: (_) => _create(),

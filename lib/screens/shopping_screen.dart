@@ -25,11 +25,20 @@ class ShoppingScreen extends StatelessWidget {
     length: 2,
     child: Scaffold(
       appBar: AppBar(
-        title: const Text('Shopping'),
+        title: const Icon(
+          Icons.shopping_cart_outlined,
+          semanticLabel: 'Shopping',
+        ),
         bottom: const TabBar(
           tabs: [
-            Tab(text: 'To buy'),
-            Tab(text: 'To sell'),
+            Tab(
+              key: Key('tab_to_buy'),
+              icon: Icon(Icons.shopping_bag_outlined, semanticLabel: 'To buy'),
+            ),
+            Tab(
+              key: Key('tab_to_sell'),
+              icon: Icon(Icons.sell_outlined, semanticLabel: 'To sell'),
+            ),
           ],
         ),
       ),
@@ -107,9 +116,10 @@ class _ItemList extends StatelessWidget {
       ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
-          content: Text('Bought 1 ${item.name}'),
+          key: const Key('snack_bought'),
+          content: Row(children: [const Icon(Icons.check), Text(item.name)]),
           action: SnackBarAction(
-            label: 'Undo',
+            label: '↶',
             // A correction, not a negative restock: this reverses a bookkeeping
             // mistake rather than describing a return to the shop. Neither
             // source feeds the consumption rate, so the pair cancels cleanly.
@@ -150,9 +160,12 @@ class _ItemList extends StatelessWidget {
             children: [
               Expanded(child: tile),
               IconButton(
+                key: const Key('btn_bought_one'),
                 onPressed: () => _bought(context, item),
-                icon: const Icon(Icons.add_shopping_cart),
-                tooltip: 'Bought one',
+                icon: const Icon(
+                  Icons.add_shopping_cart,
+                  semanticLabel: 'Bought one',
+                ),
               ),
             ],
           );

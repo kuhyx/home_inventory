@@ -43,7 +43,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Move'));
+      await tester.tap(find.bySemanticsLabel('Move'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Shed').last);
       await tester.pumpAndSettle();
@@ -64,9 +64,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.more_vert).last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Move'));
+      await tester.tap(find.bySemanticsLabel('Move'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Top level'));
+      await tester.tap(find.bySemanticsLabel('Top level'));
       await tester.pumpAndSettle();
 
       expect(repo.location(drawer.id)?.parentId, isNull);
@@ -90,7 +90,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Move'));
+      await tester.tap(find.bySemanticsLabel('Move'));
       await tester.pumpAndSettle();
 
       // The other device's move lands: Office is now inside Drawer, so moving
@@ -99,10 +99,7 @@ void main() {
       await tester.tap(find.text('Office').last);
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('That would put a place inside itself.'),
-        findsOneWidget,
-      );
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 
     testWidgets('dismissing the picker moves nothing', (tester) async {
@@ -112,7 +109,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Move'));
+      await tester.tap(find.bySemanticsLabel('Move'));
       await tester.pumpAndSettle();
       // Tap the barrier rather than a row.
       await tester.tapAt(const Offset(10, 10));
@@ -128,9 +125,9 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
+      await tester.tap(find.bySemanticsLabel('Delete'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.tap(find.bySemanticsLabel('Delete'));
       await tester.pumpAndSettle();
 
       expect(repo.location(office.id), isNull);
@@ -143,12 +140,16 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
+      await tester.tap(find.bySemanticsLabel('Delete'));
       await tester.pumpAndSettle();
 
-      // The row subtitle says '1 item' too, so match the sentence that
-      // only the dialog has.
-      expect(find.textContaining('will show as unfiled'), findsOneWidget);
+      // The dialog shows the count that loses its place as icon + number.
+      final count = find.byKey(const Key('delete_unfiled_count'));
+      expect(count, findsOneWidget);
+      expect(
+        find.descendant(of: count, matching: find.text('1')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('cancelling keeps the place', (tester) async {
@@ -157,9 +158,9 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
+      await tester.tap(find.bySemanticsLabel('Delete'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.tap(find.bySemanticsLabel('Cancel'));
       await tester.pumpAndSettle();
 
       expect(repo.location(office.id), isNotNull);

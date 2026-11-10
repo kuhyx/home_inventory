@@ -58,13 +58,13 @@ class ItemsHeader extends StatelessWidget {
             controller: searchController,
             onChanged: onSearchChanged,
             decoration: const InputDecoration(
-              labelText: 'Search',
-              prefixIcon: Icon(Icons.search),
+              prefixIcon: Icon(Icons.search, semanticLabel: 'Search'),
             ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
         IconButton(
+          key: const Key('items_header_filter'),
           onPressed: onOpenFilter,
           // The badge counts *facets*, not selections, so three rooms read as
           // one restriction — which is how many taps it takes to undo them
@@ -72,14 +72,13 @@ class ItemsHeader extends StatelessWidget {
           icon: Badge(
             isLabelVisible: activeFilterCount > 0,
             label: Text('$activeFilterCount'),
-            child: const Icon(Icons.filter_list),
+            child: const Icon(Icons.filter_list, semanticLabel: 'Filter'),
           ),
-          tooltip: 'Filter',
         ),
         PopupMenuButton<ItemSort>(
+          key: const Key('items_header_sort'),
           onSelected: onSortSelected,
-          icon: const Icon(Icons.sort),
-          tooltip: 'Sort',
+          icon: const Icon(Icons.sort, semanticLabel: 'Sort'),
           itemBuilder: (_) => [
             for (final value in ItemSort.values)
               CheckedPopupMenuItem(
@@ -90,14 +89,17 @@ class ItemsHeader extends StatelessWidget {
           ],
         ),
         IconButton(
+          key: const Key('items_header_scan'),
           onPressed: onScan,
-          icon: const Icon(Icons.qr_code_scanner),
-          tooltip: 'Scan to restock',
+          icon: const Icon(
+            Icons.qr_code_scanner,
+            semanticLabel: 'Scan to restock',
+          ),
         ),
         IconButton(
+          key: const Key('items_header_sync'),
           onPressed: onOpenSettings,
-          icon: const Icon(Icons.sync),
-          tooltip: 'Sync',
+          icon: const Icon(Icons.sync, semanticLabel: 'Sync'),
         ),
       ],
     ),

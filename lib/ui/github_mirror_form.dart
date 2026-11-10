@@ -66,7 +66,12 @@ class GitHubMirrorForm extends StatelessWidget {
     final theme = Theme.of(context);
     final device = pending;
     return Scaffold(
-      appBar: AppBar(title: const Text('Advanced sync (GitHub)')),
+      appBar: AppBar(
+        leading: const Icon(
+          Icons.cloud_sync_outlined,
+          semanticLabel: 'Advanced sync (GitHub)',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -80,12 +85,19 @@ class GitHubMirrorForm extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           TextField(
             controller: ownerController,
-            decoration: const InputDecoration(labelText: 'Owner'),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.person_outline, semanticLabel: 'Owner'),
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           TextField(
             controller: repoController,
-            decoration: const InputDecoration(labelText: 'Repository'),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(
+                Icons.folder_outlined,
+                semanticLabel: 'Repository',
+              ),
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           if (settings?.isConfigured ?? false)
@@ -105,33 +117,44 @@ class GitHubMirrorForm extends StatelessWidget {
           ],
           const SizedBox(height: AppSpacing.md),
           FilledButton(
+            key: const Key('connect_github'),
             onPressed: busy ? null : onConnect,
-            child: const Text('Connect GitHub'),
+            child: const Icon(
+              Icons.cloud_upload_outlined,
+              semanticLabel: 'Connect GitHub',
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton(
+            key: const Key('test_github_connection'),
             onPressed: busy ? null : onTest,
-            child: const Text('Test GitHub connection'),
+            child: const Icon(
+              Icons.check_circle_outline,
+              semanticLabel: 'Test GitHub connection',
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton(
+            key: const Key('sync_now'),
             onPressed: busy ? null : onSyncNow,
-            child: const Text('Sync now'),
+            child: const Icon(Icons.sync_outlined, semanticLabel: 'Sync now'),
           ),
           const Divider(),
-          // The fallback for anything the device flow cannot do — a fine
-          // grained PAT, or a machine with no browser at all.
-          Text('Or paste a token', style: theme.textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: tokenController,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Personal token'),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(
+                Icons.key_outlined,
+                semanticLabel: 'Personal token',
+              ),
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton(
+            key: const Key('save_token'),
             onPressed: busy ? null : onSaveToken,
-            child: const Text('Save token'),
+            child: const Icon(Icons.save_outlined, semanticLabel: 'Save token'),
           ),
           if (status.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),

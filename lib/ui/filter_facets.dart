@@ -61,8 +61,7 @@ class PlaceFacet extends StatelessWidget {
               if (selected)
                 IconButton(
                   onPressed: onClear,
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Anywhere',
+                  icon: const Icon(Icons.close, semanticLabel: 'Anywhere'),
                 ),
             ],
           ),
@@ -75,10 +74,18 @@ class PlaceFacet extends StatelessWidget {
 /// A labelled row of chips, hidden entirely when it has nothing to offer.
 class ChipGroup extends StatelessWidget {
   /// Creates the group.
-  const ChipGroup({required this.label, required this.chips, super.key});
+  const ChipGroup({
+    required this.icon,
+    required this.semanticLabel,
+    required this.chips,
+    super.key,
+  });
 
-  /// Heading above the chips.
-  final String label;
+  /// Icon heading above the chips (textgate: no visible heading words).
+  final IconData icon;
+
+  /// The group's name, spoken only.
+  final String semanticLabel;
 
   /// The chips themselves; an empty list hides the whole group.
   final List<Widget> chips;
@@ -94,11 +101,11 @@ class ChipGroup extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          Icon(
+            icon,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+            semanticLabel: semanticLabel,
           ),
           const SizedBox(height: AppSpacing.xs),
           Wrap(

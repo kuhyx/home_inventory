@@ -99,9 +99,9 @@ void main() {
     await pumpMirror(tester, dead);
 
     await tester.enterText(find.byType(TextField).last, 'gho_pasted');
-    await tester.tap(find.text('Save token'));
+    await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sync now'));
+    await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('network is down'), findsOneWidget);
@@ -136,7 +136,7 @@ void main() {
     ) async {
       await pumpMirror(tester, authClient(token: 'gho_from_flow'));
 
-      await tester.tap(find.text('Connect GitHub'));
+      await tester.tap(find.bySemanticsLabel('Connect GitHub'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('ABCD-1234'), findsNothing);
@@ -148,7 +148,7 @@ void main() {
     testWidgets('reports a declined authorization', (tester) async {
       await pumpMirror(tester, authClient(error: 'access_denied'));
 
-      await tester.tap(find.text('Connect GitHub'));
+      await tester.tap(find.bySemanticsLabel('Connect GitHub'));
       await tester.pumpAndSettle();
 
       expect(find.text('declined'), findsOneWidget);
@@ -163,7 +163,7 @@ void main() {
       UrlLauncherPlatform.instance = _BrokenLauncher();
       await pumpMirror(tester, authClient(token: 'gho_from_flow'));
 
-      await tester.tap(find.text('Connect GitHub'));
+      await tester.tap(find.bySemanticsLabel('Connect GitHub'));
       await tester.pumpAndSettle();
 
       expect(find.text('Connected to GitHub.'), findsOneWidget);
@@ -174,7 +174,7 @@ void main() {
       SharedPreferences.setMockInitialValues({'sync.clientId': ''});
       await pumpMirror(tester, GitHubFake().client);
 
-      await tester.tap(find.text('Connect GitHub'));
+      await tester.tap(find.bySemanticsLabel('Connect GitHub'));
       await tester.pumpAndSettle();
 
       expect(find.text('No client id configured.'), findsOneWidget);

@@ -18,7 +18,8 @@ class SuggestField extends StatelessWidget {
   /// Creates a suggest field.
   const SuggestField({
     required this.controller,
-    required this.label,
+    required this.semanticLabel,
+    this.icon = Icons.edit,
     this.suggestions = const [],
     this.keyboardType,
     this.autofocus = false,
@@ -31,8 +32,11 @@ class SuggestField extends StatelessWidget {
   /// Controller owned by the parent form.
   final TextEditingController controller;
 
-  /// Field label.
-  final String label;
+  /// Field label, spoken as the field's accessibility label.
+  final String semanticLabel;
+
+  /// Icon shown in place of a visible text label.
+  final IconData icon;
 
   /// Values to offer, most useful first. Empty hides the chip row entirely.
   final List<String> suggestions;
@@ -59,7 +63,9 @@ class SuggestField extends StatelessWidget {
       children: [
         TextFormField(
           controller: controller,
-          decoration: InputDecoration(labelText: label),
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, semanticLabel: semanticLabel),
+          ),
           keyboardType: keyboardType,
           autofocus: autofocus,
           textCapitalization: textCapitalization,

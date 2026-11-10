@@ -102,7 +102,7 @@ void main() {
   testWidgets('reports a reachable repo', (tester) async {
     await pumpMirror(tester, GitHubFake().client);
 
-    await tester.tap(find.text('Test GitHub connection'));
+    await tester.tap(find.bySemanticsLabel('Test GitHub connection'));
     await tester.pumpAndSettle();
 
     expect(find.text('Connected to kuhyx/syncs.'), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
   testWidgets('reports an unreachable repo without throwing', (tester) async {
     await pumpMirror(tester, GitHubFake(repoExists: false).client);
 
-    await tester.tap(find.text('Test GitHub connection'));
+    await tester.tap(find.bySemanticsLabel('Test GitHub connection'));
     await tester.pumpAndSettle();
 
     expect(find.text('Cannot reach kuhyx/syncs.'), findsOneWidget);
@@ -118,7 +118,7 @@ void main() {
   testWidgets('refuses to sync before a token exists', (tester) async {
     await pumpMirror(tester, GitHubFake().client);
 
-    await tester.tap(find.text('Sync now'));
+    await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
     expect(
@@ -161,7 +161,7 @@ void main() {
       sessionProbe: () async => true,
     );
 
-    await tester.tap(find.text('Sync now'));
+    await tester.tap(find.bySemanticsLabel('Sync now'));
     await tester.pumpAndSettle();
 
     expect(
@@ -178,7 +178,7 @@ void main() {
     await pumpMirror(tester, GitHubFake().client);
 
     await tester.enterText(find.byType(TextField).last, 'gho_pasted');
-    await tester.tap(find.text('Save token'));
+    await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
 
     expect(find.text('Token saved.'), findsOneWidget);
@@ -187,7 +187,7 @@ void main() {
   testWidgets('an empty pasted token does nothing', (tester) async {
     await pumpMirror(tester, GitHubFake().client);
 
-    await tester.tap(find.text('Save token'));
+    await tester.tap(find.bySemanticsLabel('Save token'));
     await tester.pumpAndSettle();
 
     expect(find.text('Token saved.'), findsNothing);

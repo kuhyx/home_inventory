@@ -48,8 +48,8 @@ void main() {
   testWidgets('says so when nothing is filed', (tester) async {
     await pumpField(tester);
 
-    expect(find.text('Location'), findsOneWidget);
-    expect(find.text('Not filed anywhere'), findsOneWidget);
+    expect(find.bySemanticsLabel('Location'), findsOneWidget);
+    expect(find.bySemanticsLabel('Not filed anywhere'), findsOneWidget);
   });
 
   testWidgets('shows the whole path, not just the leaf', (tester) async {
@@ -79,7 +79,7 @@ void main() {
 
     await pumpField(tester, locationId: room.id);
 
-    expect(find.text('Not filed anywhere'), findsOneWidget);
+    expect(find.bySemanticsLabel('Not filed anywhere'), findsOneWidget);
   });
 
   testWidgets('reports the place picked from the tree', (tester) async {
@@ -101,7 +101,7 @@ void main() {
 
     await tester.tap(find.byType(LocationField));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Not filed anywhere').last);
+    await tester.tap(find.bySemanticsLabel('Not filed anywhere').last);
     await tester.pumpAndSettle();
 
     expect(changes, ['']);
@@ -128,7 +128,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    expect(find.text('Created "korytarz" as a new room'), findsOneWidget);
+    expect(
+      // The snackbar merges the icon's spoken label with the place name.
+      find.bySemanticsLabel(RegExp('^Created "korytarz" as a new room')),
+      findsOneWidget,
+    );
     expect(changes.single, repo.listLocations().single.id);
   });
 
@@ -144,7 +148,10 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    expect(find.text('Created "szafka z lewej" in korytarz'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('^Created "szafka z lewej" in korytarz')),
+      findsOneWidget,
+    );
     expect(find.text('korytarz › szafka z lewej'), findsOneWidget);
   });
 

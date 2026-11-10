@@ -79,7 +79,8 @@ class BestBeforeField extends StatelessWidget {
       Expanded(
         child: SuggestField(
           controller: controller,
-          label: 'Best before (YYYY-MM-DD, blank for never)',
+          semanticLabel: 'Best before (YYYY-MM-DD, blank for never)',
+          icon: Icons.event_outlined,
           keyboardType: TextInputType.datetime,
           textCapitalization: TextCapitalization.none,
           validator: validateIsoDate,
@@ -87,8 +88,10 @@ class BestBeforeField extends StatelessWidget {
       ),
       IconButton(
         onPressed: () => _pick(context),
-        icon: const Icon(Icons.calendar_today_outlined),
-        tooltip: 'Pick a date',
+        icon: const Icon(
+          Icons.calendar_today_outlined,
+          semanticLabel: 'Pick a date',
+        ),
       ),
     ],
   );

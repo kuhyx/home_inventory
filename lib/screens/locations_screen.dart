@@ -63,7 +63,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
   Future<void> _addPlace({String? parentId}) async {
     final name = await _promptForName(
       context,
-      title: parentId == null ? 'New room' : 'New place inside',
+      title: parentId == null ? '' : 'New place inside',
       parentId: parentId,
     );
     if (name == null) return;
@@ -79,7 +79,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
   Future<void> _rename(LocationTreeNode node) async {
     final name = await _promptForName(
       context,
-      title: 'Rename',
+      title: '',
       parentId: node.location.parentId,
       initial: node.name,
       ignoringId: node.id,
@@ -92,7 +92,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
     final target = await showLocationPicker(
       context,
       repository: widget.repository,
-      title: 'Move "${node.name}" to',
+      semanticLabel: 'Move "${node.name}" to',
       // Its own subtree cannot host it; offering the choice only to reject it
       // is worse than not offering it.
       excludeSubtreeOf: node.id,
@@ -104,9 +104,9 @@ class _LocationsScreenState extends State<LocationsScreen> {
       now: _now(),
     );
     if (!moved && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('That would put a place inside itself.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Icon(Icons.error_outline)));
     }
   }
 
@@ -115,22 +115,31 @@ class _LocationsScreenState extends State<LocationsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete "${node.name}"?'),
-        content: Text(
-          count == 0
-              ? 'Nothing is filed here.'
-              : 'Anything inside stays, and moves up a level. '
-                    '$count ${count == 1 ? 'item' : 'items'} '
-                    'will show as unfiled.',
+        title: Icon(Icons.delete, semanticLabel: 'Delete "${node.name}"?'),
+        // textgate: the item count that loses its place, as icon + number.
+        content: Row(
+          key: const Key('delete_unfiled_count'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.inventory_2_outlined),
+            const SizedBox(width: 8),
+            Text(
+              '$count',
+              semanticsLabel: count == 0
+                  ? 'Nothing is filed here.'
+                  : '$count ${count == 1 ? 'item' : 'items'} '
+                        'will show as unfiled.',
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: const Icon(Icons.close, semanticLabel: 'Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: const Icon(Icons.delete, semanticLabel: 'Delete'),
           ),
         ],
       ),
@@ -143,10 +152,11 @@ class _LocationsScreenState extends State<LocationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Locations')),
+      appBar: AppBar(),
       floatingActionButton: FloatingActionButton(
+        key: const Key('fab_add_place'),
         onPressed: _addPlace,
-        tooltip: 'Add a room',
+        tooltip: '',
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<List<LocationTreeNode>>(
@@ -156,8 +166,8 @@ class _LocationsScreenState extends State<LocationsScreen> {
           if (roots.isEmpty) {
             return const EmptyState(
               icon: Icons.room_preferences_outlined,
-              title: 'No locations yet',
-              message: 'Tap + to add a room. It can stay empty.',
+              title: '',
+              message: '',
             );
           }
           final rows = _visibleRows(roots);
@@ -198,13 +208,17 @@ class _LocationsScreenState extends State<LocationsScreen> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
+        title: title.isEmpty
+            ? const Icon(Icons.edit, semanticLabel: '')
+            : Text(title),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(labelText: 'Name'),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.edit, semanticLabel: 'Name'),
+            ),
             validator: (value) {
               final name = (value ?? '').trim();
               if (name.isEmpty) return 'Give it a name';
@@ -224,16 +238,18 @@ class _LocationsScreenState extends State<LocationsScreen> {
         ),
         actions: [
           TextButton(
+            key: const Key('dialog_cancel'),
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const Icon(Icons.close, semanticLabel: 'Cancel'),
           ),
           FilledButton(
+            key: const Key('dialog_save'),
             onPressed: () {
               if (formKey.currentState?.validate() ?? false) {
                 Navigator.of(context).pop(controller.text.trim());
               }
             },
-            child: const Text('Save'),
+            child: const Icon(Icons.save, semanticLabel: 'Save'),
           ),
         ],
       ),
