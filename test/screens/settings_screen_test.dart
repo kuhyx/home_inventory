@@ -54,7 +54,7 @@ void main() {
     expect(find.bySemanticsLabel('Sync settings'), findsOneWidget);
     expect(find.bySemanticsLabel('Advanced sync (GitHub)'), findsOneWidget);
     expect(find.bySemanticsLabel('Connect GitHub'), findsNothing);
-    expect(find.text('Sign in with Google'), findsNothing);
+    expect(find.bySemanticsLabel('Sign in with Google'), findsNothing);
     expectNoWords(tester);
   });
 
@@ -120,7 +120,7 @@ void main() {
     /// event loop; the pump afterwards is what renders the status line.
     Future<void> tapAndFlush(WidgetTester tester, String label) async {
       await tester.runAsync(() async {
-        await tester.tap(find.text(label));
+        await tester.tap(find.bySemanticsLabel(label));
         await Future<void>.delayed(const Duration(milliseconds: 100));
       });
       await tester.pumpAndSettle();
@@ -139,7 +139,7 @@ void main() {
       await tapAndFlush(tester, 'Export inventory');
 
       expect(File(path).readAsStringSync(), contains('Cable'));
-      expect(find.text('Exported inventory.'), findsOneWidget);
+      expect(find.bySemanticsLabel('Exported inventory.'), findsOneWidget);
     });
 
     testWidgets(
@@ -157,7 +157,7 @@ void main() {
         // never wrote anything), and BackupSlot.export has no "cancelled"
         // signal to distinguish that from a real export — this matches
         // every other app's BackupSlot wiring.
-        expect(find.text('Exported inventory.'), findsOneWidget);
+        expect(find.bySemanticsLabel('Exported inventory.'), findsOneWidget);
       },
     );
 
@@ -177,7 +177,7 @@ void main() {
       await tapAndFlush(tester, 'Import inventory');
 
       expect(repo.item('a')!.name, 'Cable');
-      expect(find.text('Imported inventory.'), findsOneWidget);
+      expect(find.bySemanticsLabel('Imported inventory.'), findsOneWidget);
     });
 
     testWidgets('a cancelled import reports success — nothing was merged', (
@@ -212,7 +212,10 @@ void main() {
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 
-      expect(find.textContaining('not an inventory backup'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('not an inventory backup')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -228,7 +231,10 @@ void main() {
       await tester.pumpAndSettle();
       await tapAndFlush(tester, 'Import inventory');
 
-      expect(find.textContaining('not an inventory backup'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('not an inventory backup')),
+        findsOneWidget,
+      );
     });
   });
 }
