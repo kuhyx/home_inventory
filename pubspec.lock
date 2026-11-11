@@ -358,11 +358,11 @@ packages:
     dependency: "direct main"
     description:
       path: github_device_auth
-      ref: "github_device_auth-v0.3.2"
-      resolved-ref: "4ccaba1bb3e495ef72d70c6a7e7d7ec98d755792"
+      ref: "github_device_auth-v0.4.0"
+      resolved-ref: "3084080d744c348a217727e26a6be838e7d5a4ff"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.3.2"
+    version: "0.4.0"
   google_account_token:
     dependency: "direct main"
     description:
