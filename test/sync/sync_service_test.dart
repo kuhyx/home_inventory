@@ -6,6 +6,7 @@ import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/sync/sync_service.dart';
 
 import '../support/builders.dart';
+import '../support/e2e.dart';
 import '../support/github_fake.dart';
 
 Hlc hlc(int ms, {String node = 'peer'}) =>
@@ -38,6 +39,7 @@ void main() {
   late SyncService service;
 
   setUp(() async {
+    resetE2eCopyMemo();
     repo = await ItemRepository.openInMemory(nodeId: 'me');
     service = SyncService(repo);
   });
@@ -46,25 +48,34 @@ void main() {
     await repo.close();
   });
 
-  const myPath = '$kSyncPathPrefix/me/$kSyncFileName';
+  // Fixtures are plaintext files an old build wrote under the old prefix;
+  // the sync copies them into the encrypted one and pushes only there.
+  const oldMyPath = '$kSyncPathPrefix/me/$kSyncFileName';
+  final myPath = '${inventoryLayout.prefix}/me/$kSyncFileName';
   String peerPath(String id) => '$kSyncPathPrefix/$id/$kSyncFileName';
+  Future<SyncOutcome> syncWith(GitHubFake github) => service.sync(
+    owner: 'kuhyx',
+    repo: 'syncs',
+    token: 'tok',
+    readPassphrase: readTestPassphrase,
+    e2eParams: testArgon2,
+    httpClient: github.client,
+    now: now,
+  );
+  PutCall myPut(GitHubFake github) =>
+      github.puts.lastWhere((put) => put.path == myPath);
 
   test('pushes local items on a first sync with no peers', () async {
     await repo.upsert(itemFixture(name: 'Cable', updatedAt: now));
     final github = GitHubFake();
 
-    final outcome = await service.sync(
-      owner: 'kuhyx',
-      repo: 'syncs',
-      token: 'tok',
-      httpClient: github.client,
-      now: now,
-    );
+    final outcome = await syncWith(github);
 
     expect(outcome.pushed, isTrue);
     expect(outcome.itemCount, 1);
-    expect(github.puts.single.path, myPath);
-    expect(github.puts.single.content, contains('Cable'));
+    // Ids stay clear for the merge; the name is sealed.
+    expect(myPut(github).content, contains('"i1"'));
+    expect(myPut(github).content, isNot(contains('Cable')));
   });
 
   test('pulls a peer item and keeps its own', () async {
@@ -78,13 +89,7 @@ void main() {
       },
     );
 
-    await service.sync(
-      owner: 'kuhyx',
-      repo: 'syncs',
-      token: 'tok',
-      httpClient: github.client,
-      now: now,
-    );
+    await syncWith(github);
 
     final names = repo.listItems().map((i) => i.name).toSet();
     expect(names, {'Mine', 'Theirs'});
@@ -96,17 +101,11 @@ void main() {
         kSyncPathPrefix: ['me'],
       },
       files: {
-        myPath: logToJson({'x': _peerItem('x', 'Stale')}),
+        oldMyPath: logToJson({'x': _peerItem('x', 'Stale')}),
       },
     );
 
-    await service.sync(
-      owner: 'kuhyx',
-      repo: 'syncs',
-      token: 'tok',
-      httpClient: github.client,
-      now: now,
-    );
+    await syncWith(github);
 
     // Its own remote file is not pulled back in, so the empty local log wins.
     expect(repo.listItems(), isEmpty);
@@ -130,15 +129,9 @@ void main() {
       },
     );
 
-    await service.sync(
-      owner: 'kuhyx',
-      repo: 'syncs',
-      token: 'tok',
-      httpClient: github.client,
-      now: now,
-    );
+    await syncWith(github);
 
-    expect(github.puts.single.content, isNot(contains('old')));
+    expect(myPut(github).content, isNot(contains('"old"')));
     expect(repo.exportLog().containsKey('old'), isFalse);
     // The peer's live item still made it through — the prune is targeted,
     // not a blanket drop of everything the peer sent.
@@ -159,13 +152,7 @@ void main() {
       },
     );
 
-    await service.sync(
-      owner: 'kuhyx',
-      repo: 'syncs',
-      token: 'tok',
-      httpClient: github.client,
-      now: now,
-    );
+    await syncWith(github);
 
     expect(repo.exportLog().containsKey('fresh'), isTrue);
     expect(repo.historyFor('peer-1'), hasLength(1));
@@ -198,13 +185,7 @@ void main() {
       },
     );
 
-    await service.sync(
-      owner: 'kuhyx',
-      repo: 'syncs',
-      token: 'tok',
-      httpClient: github.client,
-      now: now,
-    );
+    await syncWith(github);
 
     final merged = repo.item('shared')!;
     expect(merged.room, 'Pantry');
@@ -214,16 +195,7 @@ void main() {
   test('surfaces a missing repo rather than swallowing it', () async {
     final github = GitHubFake(repoExists: false);
 
-    await expectLater(
-      service.sync(
-        owner: 'kuhyx',
-        repo: 'syncs',
-        token: 'tok',
-        httpClient: github.client,
-        now: now,
-      ),
-      throwsA(isA<GitHubSyncError>()),
-    );
+    await expectLater(syncWith(github), throwsA(isA<GitHubSyncError>()));
   });
 
   test('defaults its clock when none is given', () async {
@@ -234,6 +206,8 @@ void main() {
       owner: 'kuhyx',
       repo: 'syncs',
       token: 'tok',
+      readPassphrase: readTestPassphrase,
+      e2eParams: testArgon2,
       httpClient: github.client,
     );
 

@@ -68,7 +68,7 @@ class GitHubFake {
       return http.Response(jsonEncode({'content': <String, dynamic>{}}), 201);
     }
 
-    final listing = dirs[key];
+    final listing = dirs[key] ?? _childrenOf(key);
     if (listing != null) {
       return http.Response(
         jsonEncode([
@@ -92,5 +92,17 @@ class GitHubFake {
     }
 
     return http.Response('{"message":"Not Found"}', 404);
+  }
+
+  /// Direct children of [dir] implied by stored [files], as real GitHub
+  /// lists them: the end-to-end migration writes peers under a new prefix
+  /// that no fixture listed. Null when nothing lives under [dir].
+  List<String>? _childrenOf(String dir) {
+    final names = <String>{
+      for (final path in files.keys)
+        if (path.startsWith('$dir/'))
+          path.substring(dir.length + 1).split('/')[0],
+    };
+    return names.isEmpty ? null : names.toList();
   }
 }

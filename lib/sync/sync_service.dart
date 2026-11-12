@@ -6,6 +6,8 @@ import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/record_types.dart';
 import 'package:http/http.dart' as http;
 
+/// The pre-encryption prefix; the live data is `E2eLayout.of(this)`.
+///
 /// Where each device's log file lives inside the shared `syncs` repo.
 ///
 /// One file per device, so two devices never write the same path and there
@@ -18,13 +20,21 @@ const String kSyncFileName = 'inventory.json';
 /// What one sync tick did, for the settings screen to report.
 class SyncOutcome {
   /// Creates an outcome.
-  const SyncOutcome({required this.itemCount, required this.pushed});
+  const SyncOutcome({
+    required this.itemCount,
+    required this.pushed,
+    this.locked = false,
+  });
 
   /// How many live items exist after the merge.
   final int itemCount;
 
   /// Whether this device's file was written.
   final bool pushed;
+
+  /// Whether no usable end-to-end key was found, so nothing was pulled or
+  /// pushed.
+  final bool locked;
 }
 
 /// Runs one pull-merge-push tick against GitHub.
@@ -58,12 +68,22 @@ class SyncService {
   /// changed — the traffic that the free tier's 10 GB/month budget depends on
   /// not happening. It is optional only so the smoke tool can opt out.
   ///
+  /// Everything pushed is end-to-end encrypted under the shared crdt-sync
+  /// passphrase from [readPassphrase], on `E2eLayout.of(kSyncPathPrefix)`;
+  /// the old plaintext prefix is copied over once and never deleted here.
+  /// Without a usable key the tick fails closed: nothing is pulled or pushed
+  /// and the outcome is [SyncOutcome.locked]. [keyCache] lets Argon2id run
+  /// once per device; [e2eParams] is lowered only by tests.
+  ///
   /// Throws [GitHubSyncError] (including [RepoNotFoundError]) when GitHub
   /// rejects the request; callers surface that rather than crashing.
   Future<SyncOutcome> sync({
     required String owner,
     required String repo,
     required String token,
+    required Future<String?> Function() readPassphrase,
+    E2eKeyCache? keyCache,
+    Argon2Params e2eParams = Argon2Params.recommended,
     RemoteStore? firebase,
     SyncStateStore? stateStore,
     http.Client? httpClient,
@@ -80,10 +100,28 @@ class SyncService {
         ? github
         : MirrorStore(primary: firebase, mirror: github);
     try {
+      // Wrap the OUTERMOST store, so Firebase and the GitHub mirror both only
+      // ever see ciphertext.
+      final e2e = await openEncryptedStore(
+        store: client,
+        oldPrefix: kSyncPathPrefix,
+        readPassphrase: readPassphrase,
+        params: e2eParams,
+        keyCache: keyCache,
+      );
+      if (e2e is! E2eReady) {
+        return SyncOutcome(
+          itemCount: repository.listItems().length,
+          pushed: false,
+          locked: true,
+        );
+      }
+      final layout = E2eLayout.of(kSyncPathPrefix);
       final merged = await syncLog(
-        client: client,
+        client: e2e.store,
         deviceId: repository.nodeId,
-        pathPrefix: kSyncPathPrefix,
+        pathPrefix: layout.prefix,
+        revsPath: layout.revsPath,
         localLog: repository.exportLog(),
         stateStore: stateStore,
         encode: logToJson,

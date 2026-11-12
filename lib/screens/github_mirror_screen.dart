@@ -12,6 +12,8 @@ library;
 import 'dart:async';
 
 import 'package:crdt_sync/crdt_sync.dart';
+import 'package:crdt_sync_flutter/crdt_sync_flutter.dart'
+    show E2ePassphraseButton;
 import 'package:flutter/material.dart';
 import 'package:github_device_auth/github_device_auth.dart';
 import 'package:home_inventory/data/item_repository.dart';
@@ -176,7 +178,7 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
     await _persist(settings);
     // `openFirebase` is the production default; tests always inject, because
     // the real one reaches the OS keystore through a platform channel.
-    final synced = await runMirrorSync(
+    return await runMirrorSync(
       repository: widget.repository,
       settings: settings,
       firebaseFactory: widget.firebaseFactory ?? openFirebase,
@@ -184,7 +186,6 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
       httpClient: widget.httpClient,
       now: widget.now?.call(),
     );
-    return (ok: true, spoken: synced);
   });
 
   Future<void> _connect() => _guard(() async {
@@ -235,5 +236,13 @@ class _GitHubMirrorScreenState extends State<GitHubMirrorScreen> {
     onTest: _testConnection,
     onSyncNow: _syncNow,
     onSaveToken: _saveToken,
+    passphraseButton: ValueListenableBuilder<bool>(
+      valueListenable: e2eLocked,
+      builder: (context, locked, _) => E2ePassphraseButton(
+        locked: locked,
+        // A new passphrase is only proven by a sync that unlocks.
+        onSaved: () => unawaited(_syncNow()),
+      ),
+    ),
   );
 }

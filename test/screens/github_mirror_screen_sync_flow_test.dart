@@ -16,6 +16,7 @@ import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../support/builders.dart';
+import '../support/e2e.dart';
 import '../support/github_fake.dart';
 import '../support/pump.dart';
 
@@ -56,7 +57,8 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
-    FlutterSecureStorage.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({...e2eSecureSeed});
+    resetE2eForTest();
     launcher = _FakeLauncher();
     UrlLauncherPlatform.instance = launcher;
     repo = await ItemRepository.openInMemory(nodeId: 'me');

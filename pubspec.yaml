@@ -22,8 +22,15 @@ dependencies:
   crdt_sync:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_dart-v0.12.1
+      ref: crdt_sync_dart-v0.14.0
       path: crdt_sync_dart
+  # End-to-end encryption bootstrap (keystore passphrase + key cache) and the
+  # text-free lock button; Flutter-only, so SyncService stays pure Dart.
+  crdt_sync_flutter:
+    git:
+      url: https://github.com/kuhyx/utils
+      ref: crdt_sync_flutter-v0.8.0
+      path: crdt_sync_flutter
 
   cupertino_icons: 2.0.0
 
@@ -67,7 +74,7 @@ dependencies:
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.7.0
+      ref: sync_settings_ui-v0.7.2
       path: sync_settings_ui
   url_launcher: 6.3.3
   uuid: 4.6.0

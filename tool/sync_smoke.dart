@@ -88,9 +88,21 @@ Future<void> main(List<String> args) async {
     }
 
     stdout.writeln('Syncing as ${repository.nodeId} against $owner/$repo …');
-    final outcome = await SyncService(
-      repository,
-    ).sync(owner: owner, repo: repo, token: token);
+    final outcome = await SyncService(repository).sync(
+      owner: owner,
+      repo: repo,
+      token: token,
+      readPassphrase: _readPassphrase,
+    );
+    if (outcome.locked) {
+      // Fail closed: never fall back to a plaintext push.
+      stderr.writeln(
+        'Sync locked: set CRDT_SYNC_PASSPHRASE or write the shared '
+        'passphrase to ~/.config/crdt-sync/password.',
+      );
+      exitCode = 1;
+      return;
+    }
     stdout.writeln('Merged ${outcome.itemCount} items.');
     _report(repository);
     if (outcome.itemCount == 0) {
@@ -105,6 +117,17 @@ Future<void> main(List<String> args) async {
     // caller's, and deleting it would silently reset the peer's identity.
     if (peerDir == null) await directory.delete(recursive: true);
   }
+}
+
+/// The shared crdt-sync passphrase: the environment first, then the file the
+/// Python daemons read too.
+Future<String?> _readPassphrase() async {
+  final fromEnv = Platform.environment['CRDT_SYNC_PASSPHRASE'];
+  if (fromEnv != null && fromEnv.isNotEmpty) return fromEnv;
+  final home = Platform.environment['HOME'] ?? '';
+  final file = File(p.join(home, '.config', 'crdt-sync', 'password'));
+  if (!file.existsSync()) return null;
+  return (await file.readAsString()).trim();
 }
 
 /// Applies whatever mutations the arguments asked for, before any sync.
@@ -140,13 +163,28 @@ Future<void> _forgetPeer({
   required String deviceId,
 }) async {
   final client = GitHubClient(owner: owner, repo: repo, token: token);
-  final path = '$kSyncPathPrefix/$deviceId/$kSyncFileName';
+  // Both copies: a peer left under the old plaintext prefix would be copied
+  // straight back into the encrypted one by the next sync's migration.
+  final paths = [
+    for (final prefix in [
+      kSyncPathPrefix,
+      E2eLayout.of(kSyncPathPrefix).prefix,
+    ])
+      '$prefix/$deviceId/$kSyncFileName',
+  ];
   try {
-    await client.deleteFile(path, message: 'home_inventory: forget $deviceId');
-    stdout.writeln('Deleted $path.');
-  } on GitHubSyncError catch (error) {
-    stderr.writeln('Could not delete $path: $error');
-    exitCode = 1;
+    for (final path in paths) {
+      try {
+        await client.deleteFile(
+          path,
+          message: 'home_inventory: forget $deviceId',
+        );
+        stdout.writeln('Deleted $path.');
+      } on GitHubSyncError catch (error) {
+        stderr.writeln('Could not delete $path: $error');
+        exitCode = 1;
+      }
+    }
   } finally {
     client.close();
   }

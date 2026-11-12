@@ -23,6 +23,7 @@ class GitHubMirrorForm extends StatelessWidget {
     required this.onTest,
     required this.onSyncNow,
     required this.onSaveToken,
+    required this.passphraseButton,
     super.key,
   });
 
@@ -64,6 +65,9 @@ class GitHubMirrorForm extends StatelessWidget {
 
   /// Stores the pasted token.
   final VoidCallback onSaveToken;
+
+  /// The end-to-end passphrase lock, next to the sync it unlocks.
+  final Widget passphraseButton;
 
   @override
   Widget build(BuildContext context) {
@@ -151,6 +155,7 @@ class GitHubMirrorForm extends StatelessWidget {
             onPressed: busy ? null : onSyncNow,
             child: const Icon(Icons.sync_outlined, semanticLabel: 'Sync now'),
           ),
+          Center(child: passphraseButton),
           const Divider(),
           TextField(
             controller: tokenController,

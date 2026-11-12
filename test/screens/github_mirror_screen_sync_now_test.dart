@@ -16,6 +16,8 @@ import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../support/builders.dart';
+import '../support/e2e.dart';
+import '../support/e2e_header_mock.dart';
 import '../support/github_fake.dart';
 import '../support/pump.dart';
 
@@ -56,7 +58,8 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
-    FlutterSecureStorage.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({...e2eSecureSeed});
+    resetE2eForTest();
     launcher = _FakeLauncher();
     UrlLauncherPlatform.instance = launcher;
     repo = await ItemRepository.openInMemory(nodeId: 'me');
@@ -111,10 +114,18 @@ void main() {
     // what lets a later tick skip re-downloading an unchanged peer, and it is
     // published *after* the log so a peer can never cache "seen rev X"
     // against a log it never received.
-    expect(github.puts.map((p) => p.path), [
-      '$kSyncPathPrefix/me/$kSyncFileName',
-      'inventory-sync/revs/me',
-    ]);
+    // Both land on the encrypted layout, never the old plaintext prefix.
+    expect(
+      github.puts.map((p) => p.path),
+      containsAllInOrder([
+        '${inventoryLayout.prefix}/me/$kSyncFileName',
+        '${inventoryLayout.revsPath}/me',
+      ]),
+    );
+    expect(
+      github.puts.where((p) => p.path.startsWith('$kSyncPathPrefix/')),
+      isEmpty,
+    );
   });
   testWidgets('syncs via Firebase and still mirrors to GitHub', (tester) async {
     // The cutover guarantee: Firebase is authoritative, and GitHub keeps
@@ -137,7 +148,7 @@ void main() {
           ),
         ),
       ),
-      httpClient: http_testing.MockClient((request) async {
+      httpClient: e2eMock((request) async {
         if (request.method == 'PUT') {
           firebasePuts.add(request.url.path);
           return http.Response(request.body, 200);

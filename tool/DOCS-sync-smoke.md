@@ -9,6 +9,11 @@ Usage, from the repo root:
   GITHUB_TOKEN=<pat> dart run tool/sync_smoke.dart
   GITHUB_TOKEN=<pat> dart run tool/sync_smoke.dart --seed "Test cable"
 
+Pushes are end-to-end encrypted under the shared crdt-sync passphrase, read
+from CRDT_SYNC_PASSPHRASE or ~/.config/crdt-sync/password; with neither the
+run exits 1 and pushes nothing (no plaintext fallback). Data lives under
+inventory-sync/devices-e2e; the old plaintext prefix is only copied from.
+
 Pass --seed to push one throwaway item; run it again without --seed (which
 gets a fresh node id) and that item should come back. That two-run pair is
 what actually proves a round trip — a bare run only proves the push half.
