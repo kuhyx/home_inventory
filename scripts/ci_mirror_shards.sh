@@ -18,6 +18,13 @@ shard_files() {
     done < <(cd "$REPO_DIR" && git ls-files -- 'test/*_test.dart' | LC_ALL=C sort)
 }
 
+# flutter's default is one test isolate per core: 16 here, which the gate's
+# 4 GiB cap OOM-kills (signal 15 on shard 1/6, Flutter 3.50). Two keeps a
+# shard well under the cap; FLUTTER_TEST_CONCURRENCY is the shared knob the
+# ~/.claude finish gate also honours.
+TEST_CONCURRENCY="${FLUTTER_TEST_CONCURRENCY:-2}"
+readonly TEST_CONCURRENCY
+
 shards_dir() {
     printf '%s/coverage-shards\n' "$(git -C "$REPO_DIR" rev-parse --git-dir)"
 }
@@ -105,7 +112,8 @@ coverage_shard() {
     log "flutter test --coverage, shard $index/$total (${#files[@]} files, tree ${tree:0:12})"
     rm -f "${REPO_DIR:?}/coverage/lcov.info"
     # GIT_*: git exports them to hooks; flutter would then read this repo as its SDK.
-    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE flutter test --coverage "${files[@]}"
+    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE \
+        flutter test --coverage --concurrency "$TEST_CONCURRENCY" "${files[@]}"
     [[ -s "$REPO_DIR/coverage/lcov.info" ]] || die "flutter produced no coverage/lcov.info"
     require_clean_tree
     [[ "$(git -C "$REPO_DIR" rev-parse 'HEAD^{tree}')" == "$tree" ]] || die "HEAD moved while the shard ran"

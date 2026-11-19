@@ -31,8 +31,7 @@ dependencies:
       url: https://github.com/kuhyx/utils
       ref: crdt_sync_flutter-v0.9.1
       path: crdt_sync_flutter
-  # Flutter 3.50 deprecates package:flutter/material.dart; new crdt_sync_flutter
-  # / sync_settings_ui are built on this alternative Material implementation.
+
   cupertino_icons: 2.0.0
 
   # Export/import file plumbing (Save-as picker, open picker), shared.

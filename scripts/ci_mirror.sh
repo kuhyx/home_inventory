@@ -153,7 +153,7 @@ main() {
             phase_analyze
             phase_format
             log "flutter test --coverage"
-            flutter test --coverage
+            flutter test --coverage --concurrency "$TEST_CONCURRENCY"
             phase_coverage_gate
             phase_build
             ;;
