@@ -1,8 +1,8 @@
 /// The tinted pill both item badges draw.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A tinted pill holding a glyph and an optional short number.
 ///

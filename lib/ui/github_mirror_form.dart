@@ -1,10 +1,10 @@
 /// The GitHub mirror screen's form, without any of its plumbing.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:github_device_auth/github_device_auth.dart';
 import 'package:home_inventory/sync/sync_settings.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Owner/repo fields, the connect buttons, the token fallback and a status.
 class GitHubMirrorForm extends StatelessWidget {

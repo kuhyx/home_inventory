@@ -1,10 +1,10 @@
 /// The item list's header: search, filter, sort, scan, sync.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/ui/summary_strip.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The row of controls above the item list.
 ///

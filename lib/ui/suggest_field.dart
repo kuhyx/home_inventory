@@ -1,8 +1,8 @@
 /// A text field with tap-to-fill suggestions drawn from existing data.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A labelled text field with a scrollable row of suggestion chips beneath it.
 ///

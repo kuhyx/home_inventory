@@ -1,12 +1,12 @@
 /// Choosing a place from the tree.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/location.dart';
 import 'package:home_inventory/models/location_tree.dart';
 import 'package:home_inventory/ui/empty_state.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// What a picker returned: a place, or the explicit "no place" choice.
 ///

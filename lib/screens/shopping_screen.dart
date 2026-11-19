@@ -1,13 +1,13 @@
 /// "What do I need, and what can I sell?"
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/screens/item_detail_screen.dart';
 import 'package:home_inventory/ui/empty_state.dart';
 import 'package:home_inventory/ui/item_tile.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The two outward-facing lists: things to buy, and things to get rid of.
 class ShoppingScreen extends StatelessWidget {

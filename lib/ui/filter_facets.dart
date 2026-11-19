@@ -1,8 +1,8 @@
 /// The facet controls the filter sheet is built out of.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The "Place" facet: a button opening the tree picker, plus a clear.
 ///

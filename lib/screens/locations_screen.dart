@@ -1,7 +1,6 @@
 /// "Where is it?" — the place tree, at any depth.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/location_tree.dart';
 import 'package:home_inventory/ui/empty_state.dart';
@@ -9,6 +8,7 @@ import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/location_picker.dart';
 import 'package:home_inventory/ui/place_row.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Browsable map of the house, nested as deeply as the user likes.
 class LocationsScreen extends StatefulWidget {

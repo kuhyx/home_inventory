@@ -1,12 +1,12 @@
 /// The root surface: three destinations over one repository.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/screens/items_screen.dart';
 import 'package:home_inventory/screens/locations_screen.dart';
 import 'package:home_inventory/screens/shopping_screen.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Root surface of the app.
 ///

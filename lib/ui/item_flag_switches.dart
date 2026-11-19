@@ -1,7 +1,7 @@
 /// The two shopping-list flags, as one block.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// "I want this" and "I could sell this", side by side in the form.
 ///

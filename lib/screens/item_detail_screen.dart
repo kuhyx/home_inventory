@@ -1,7 +1,6 @@
 /// One item in full: how much, where, and how fast it is going.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/models/barcode_link.dart';
@@ -11,6 +10,7 @@ import 'package:home_inventory/ui/code_prompt.dart';
 import 'package:home_inventory/ui/quantity_stepper.dart';
 import 'package:home_inventory/ui/stock_badge.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detail view for a single item.
 class ItemDetailScreen extends StatelessWidget {

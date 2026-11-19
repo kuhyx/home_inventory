@@ -10,13 +10,13 @@ library;
 
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:data_transfer_flutter/data_transfer_flutter.dart';
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/backup_export.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/screens/github_mirror_screen.dart';
 import 'package:home_inventory/sync/firebase_backend.dart';
 import 'package:home_inventory/sync/google_sign_in_backend.dart';
 import 'package:http/http.dart' as http;
+import 'package:material_ui/material_ui.dart';
 import 'package:sync_settings_ui/sync_settings_ui.dart';
 
 /// Links to the shared Sync settings screen and the app-local GitHub mirror.

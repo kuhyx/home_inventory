@@ -1,7 +1,6 @@
 /// The fast path for getting a thing into the inventory.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/legacy_location_filing.dart';
 import 'package:home_inventory/models/item.dart';
@@ -10,6 +9,7 @@ import 'package:home_inventory/ui/location_field.dart';
 import 'package:home_inventory/ui/number_input.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
 
 /// Bottom sheet for adding an item in as few taps as possible.

@@ -1,10 +1,10 @@
 /// Restocking by barcode, from anywhere that can show a snack bar.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
 import 'package:home_inventory/ui/code_prompt.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Asks for a code and restocks whatever it is linked to.
 ///

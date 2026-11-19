@@ -1,7 +1,6 @@
 /// The sheet that narrows the item list down to one corner of the house.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/models/item.dart';
@@ -11,6 +10,7 @@ import 'package:home_inventory/ui/freshness_badge.dart';
 import 'package:home_inventory/ui/location_picker.dart';
 import 'package:home_inventory/ui/stock_badge.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Modal editor for an [ItemFilter].
 ///

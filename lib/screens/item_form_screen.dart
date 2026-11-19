@@ -1,7 +1,6 @@
 /// The full add/edit form — everything the quick-add sheet leaves out.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/legacy_location_filing.dart';
 import 'package:home_inventory/models/item.dart';
@@ -12,6 +11,7 @@ import 'package:home_inventory/ui/location_field.dart';
 import 'package:home_inventory/ui/number_input.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
 
 /// Add or edit one item, with every field exposed.

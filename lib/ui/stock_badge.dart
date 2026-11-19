@@ -1,10 +1,10 @@
 /// The low/out indicator shown next to an item.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/ui/status_pill.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Glyph for each [StockState]: a battery draining, so the filter chips and
 /// the list badges share one picture per state.

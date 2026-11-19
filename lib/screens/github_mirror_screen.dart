@@ -14,7 +14,6 @@ import 'dart:async';
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart'
     show E2ePassphraseButton;
-import 'package:flutter/material.dart';
 import 'package:github_device_auth/github_device_auth.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/sync/firebase_backend.dart';
@@ -24,6 +23,7 @@ import 'package:home_inventory/sync/sync_settings.dart';
 import 'package:home_inventory/sync/sync_state_factory.dart';
 import 'package:home_inventory/ui/github_mirror_form.dart';
 import 'package:http/http.dart' as http;
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// GitHub mirror connection, token management, and manual sync.

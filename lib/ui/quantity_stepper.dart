@@ -1,9 +1,9 @@
 /// The −/+ control that drives every casual quantity change.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A large quantity readout flanked by decrement and increment buttons.
 ///

@@ -1,9 +1,9 @@
 /// The place field on the item forms: pick one, or make one.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/ui/location_picker.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shows where an item is filed, and opens the tree picker to change it.
 ///

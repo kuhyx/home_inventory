@@ -1,11 +1,11 @@
 /// The one-line headline counts above the item list.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/inventory_summary.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Glyph for each sort option in the menu.
 IconData sortGlyph(ItemSort sort) => switch (sort) {

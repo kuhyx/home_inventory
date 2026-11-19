@@ -1,8 +1,8 @@
 /// The keyboard stand-in for a camera.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// What [promptForCode] came back with.
 typedef CodeEntry = ({String code, double amount});

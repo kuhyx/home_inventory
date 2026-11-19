@@ -1,11 +1,11 @@
 /// Entry point for the home inventory app.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/repository_factory.dart';
 import 'package:home_inventory/screens/home_shell.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 // coverage:ignore-start
 // Bootstrap only: resolves real platform storage and calls runApp, neither of

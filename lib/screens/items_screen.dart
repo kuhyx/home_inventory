@@ -2,7 +2,7 @@
 library;
 
 import 'dart:async';
-import 'package:flutter/material.dart';
+
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/models/item_filter.dart';
@@ -15,6 +15,7 @@ import 'package:home_inventory/ui/item_tile.dart';
 import 'package:home_inventory/ui/items_header.dart';
 import 'package:home_inventory/ui/scan_restock.dart';
 import 'package:home_inventory/ui/summary_strip.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Searchable list of everything owned.
 class ItemsScreen extends StatefulWidget {

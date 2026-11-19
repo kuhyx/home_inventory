@@ -1,9 +1,9 @@
 /// The best-before field: one date shape, typed or picked.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The one date shape the field accepts, and the one it writes back.
 ///

@@ -1,11 +1,11 @@
 /// One row in the item list.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/ui/freshness_badge.dart';
 import 'package:home_inventory/ui/stock_badge.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A list row showing what the thing is, how much there is, and where it is.
 class ItemTile extends StatelessWidget {

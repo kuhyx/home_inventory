@@ -1,9 +1,9 @@
 /// One row of the place tree.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/models/location_tree.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// How far indentation keeps growing before it stops.
 const int kMaxIndentDepth = 6;

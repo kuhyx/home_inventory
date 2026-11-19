@@ -1,10 +1,10 @@
 /// The best-before indicator shown next to a dated item.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/models/freshness.dart';
 import 'package:home_inventory/ui/status_pill.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Glyph for each [FreshnessState], shared by the badges and the filter chips.
 IconData freshnessGlyph(FreshnessState state) => switch (state) {

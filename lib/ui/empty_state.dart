@@ -1,8 +1,8 @@
 /// The placeholder shown when a list has nothing in it.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:home_inventory/ui/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A centred glyph with a small corner badge for an empty list.
 ///
