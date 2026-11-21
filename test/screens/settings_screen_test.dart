@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
+import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
@@ -43,6 +44,11 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('renders the kuhy credit logo in the AppBar', (tester) async {
+    await pumpSettings(tester);
+    expect(find.byType(KuhyCredit), findsOneWidget);
+  });
 
   testWidgets('renders the two sync links and no inline sync fields', (
     tester,

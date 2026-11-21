@@ -16,6 +16,7 @@ import 'package:home_inventory/screens/github_mirror_screen.dart';
 import 'package:home_inventory/sync/firebase_backend.dart';
 import 'package:home_inventory/sync/google_sign_in_backend.dart';
 import 'package:http/http.dart' as http;
+import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:sync_settings_ui/sync_settings_ui.dart';
 
@@ -115,6 +116,12 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Icon(Icons.settings, semanticLabel: 'Settings'),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: KuhyCredit(size: 32, below: true),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
