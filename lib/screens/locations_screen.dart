@@ -4,8 +4,8 @@ library;
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/location_tree.dart';
 import 'package:home_inventory/ui/empty_state.dart';
-import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/location_picker.dart';
+import 'package:home_inventory/ui/place_name_dialog.dart';
 import 'package:home_inventory/ui/place_row.dart';
 import 'package:home_inventory/ui/theme.dart';
 import 'package:material_ui/material_ui.dart';
@@ -62,8 +62,9 @@ class _LocationsScreenState extends State<LocationsScreen> {
   }
 
   Future<void> _addPlace({String? parentId}) async {
-    final name = await _promptForName(
+    final name = await showPlaceNameDialog(
       context,
+      repository: widget.repository,
       glyph: parentId == null
           ? Icons.add_home_outlined
           : Icons.create_new_folder_outlined,
@@ -81,8 +82,9 @@ class _LocationsScreenState extends State<LocationsScreen> {
   }
 
   Future<void> _rename(LocationTreeNode node) async {
-    final name = await _promptForName(
+    final name = await showPlaceNameDialog(
       context,
+      repository: widget.repository,
       glyph: Icons.edit,
       spoken: 'Rename',
       parentId: node.location.parentId,
@@ -197,65 +199,6 @@ class _LocationsScreenState extends State<LocationsScreen> {
             },
           );
         },
-      ),
-    );
-  }
-
-  Future<String?> _promptForName(
-    BuildContext context, {
-    required IconData glyph,
-    required String spoken,
-    required String? parentId,
-    String? initial,
-    String? ignoringId,
-  }) {
-    final controller = TextEditingController(text: initial ?? '');
-    final formKey = GlobalKey<FormState>();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Icon(glyph, semanticLabel: spoken),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.edit, semanticLabel: 'Name'),
-            ),
-            validator: (value) {
-              final name = (value ?? '').trim();
-              if (name.isEmpty) return invalidField;
-              // Sibling names must stay unique: ids are derived from
-              // (parent, folded name), so two "Shelf" rows under one cupboard
-              // would collapse onto a single record.
-              if (widget.repository.hasChildNamed(
-                parentId,
-                name,
-                ignoringId: ignoringId,
-              )) {
-                return invalidField;
-              }
-              return null;
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            key: const Key('dialog_cancel'),
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Icon(Icons.close, semanticLabel: 'Cancel'),
-          ),
-          FilledButton(
-            key: const Key('dialog_save'),
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.of(context).pop(controller.text.trim());
-              }
-            },
-            child: const Icon(Icons.save, semanticLabel: 'Save'),
-          ),
-        ],
       ),
     );
   }

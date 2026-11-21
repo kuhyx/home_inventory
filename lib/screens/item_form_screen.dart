@@ -7,6 +7,7 @@ import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/ui/best_before_field.dart';
 import 'package:home_inventory/ui/field_error.dart';
 import 'package:home_inventory/ui/item_flag_switches.dart';
+import 'package:home_inventory/ui/item_form_controllers.dart';
 import 'package:home_inventory/ui/location_field.dart';
 import 'package:home_inventory/ui/number_input.dart';
 import 'package:home_inventory/ui/suggest_field.dart';
@@ -39,13 +40,7 @@ class ItemFormScreen extends StatefulWidget {
 
 class _ItemFormScreenState extends State<ItemFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _name;
-  late final TextEditingController _quantity;
-  late final TextEditingController _unit;
-  late final TextEditingController _category;
-  late final TextEditingController _lowStockAt;
-  late final TextEditingController _bestBefore;
-  late final TextEditingController _notes;
+  late final ItemFormControllers _fields = ItemFormControllers(widget.item);
   late bool _wanted;
   late bool _sellable;
 
@@ -66,41 +61,24 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
   void initState() {
     super.initState();
     final item = _existing;
-    _name = TextEditingController(text: item?.name ?? '');
-    _quantity = TextEditingController(
-      text: item == null ? '1' : formatQuantity(item.quantity),
-    );
-    _unit = TextEditingController(text: item?.unit ?? '');
     _locationId = item?.locationId ?? '';
-    _category = TextEditingController(text: item?.category ?? '');
-    _lowStockAt = TextEditingController(
-      text: item?.lowStockAt == null ? '' : formatQuantity(item!.lowStockAt!),
-    );
-    _bestBefore = TextEditingController(text: formatIsoDate(item?.bestBefore));
-    _notes = TextEditingController(text: item?.notes ?? '');
     _wanted = item?.wanted ?? false;
     _sellable = item?.sellable ?? false;
   }
 
   @override
   void dispose() {
-    _name.dispose();
-    _quantity.dispose();
-    _unit.dispose();
-    _category.dispose();
-    _lowStockAt.dispose();
-    _bestBefore.dispose();
-    _notes.dispose();
+    _fields.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final at = (widget.now ?? DateTime.now)();
-    final quantity = parseNumberInput(_quantity.text) ?? 0;
-    final threshold = _lowStockAt.text.trim().isEmpty
+    final quantity = parseNumberInput(_fields.quantity.text) ?? 0;
+    final threshold = _fields.lowStockAt.text.trim().isEmpty
         ? null
-        : parseNumberInput(_lowStockAt.text);
+        : parseNumberInput(_fields.lowStockAt.text);
     final existing = _existing;
     // An item that predates the places tree still names its place as two
     // strings; the user's own pick wins over them once they make one.
@@ -115,18 +93,18 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
     final legacy = legacyStringsFor(widget.repository.pathOf(locationId));
     final item = Item(
       id: existing?.id ?? const Uuid().v4(),
-      name: _name.text.trim(),
+      name: _fields.name.text.trim(),
       quantity: quantity,
-      unit: _unit.text.trim(),
+      unit: _fields.unit.text.trim(),
       locationId: locationId,
       room: legacy.room,
       container: legacy.container,
-      category: _category.text.trim(),
+      category: _fields.category.text.trim(),
       lowStockAt: threshold,
-      bestBefore: parseIsoDate(_bestBefore.text),
+      bestBefore: parseIsoDate(_fields.bestBefore.text),
       wanted: _wanted,
       sellable: _sellable,
-      notes: _notes.text.trim(),
+      notes: _fields.notes.text.trim(),
       createdAt: existing?.createdAt ?? at,
       updatedAt: at,
     );
@@ -170,7 +148,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
           children: [
             SuggestField(
               key: const Key('name-field'),
-              controller: _name,
+              controller: _fields.name,
               semanticLabel: 'Name',
               validator: (value) =>
                   (value ?? '').trim().isEmpty ? invalidField : null,
@@ -178,7 +156,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
             const SizedBox(height: AppSpacing.md),
             SuggestField(
               key: const Key('quantity-field'),
-              controller: _quantity,
+              controller: _fields.quantity,
               semanticLabel: 'Quantity',
               icon: Icons.numbers,
               keyboardType: const TextInputType.numberWithOptions(
@@ -189,7 +167,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
             const SizedBox(height: AppSpacing.md),
             SuggestField(
               key: const Key('unit-field'),
-              controller: _unit,
+              controller: _fields.unit,
               semanticLabel: 'Unit (blank for a plain count)',
               icon: Icons.text_fields,
               suggestions: repo.knownUnits(),
@@ -213,7 +191,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
             const SizedBox(height: AppSpacing.md),
             SuggestField(
               key: const Key('category-field'),
-              controller: _category,
+              controller: _fields.category,
               semanticLabel: 'Category',
               icon: Icons.category,
               suggestions: repo.knownCategories(),
@@ -221,7 +199,7 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
             const SizedBox(height: AppSpacing.md),
             SuggestField(
               key: const Key('low-stock-field'),
-              controller: _lowStockAt,
+              controller: _fields.lowStockAt,
               semanticLabel: 'Warn me at (blank for never)',
               icon: Icons.warning,
               keyboardType: const TextInputType.numberWithOptions(
@@ -231,13 +209,13 @@ class _ItemFormScreenState extends State<ItemFormScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             BestBeforeField(
-              controller: _bestBefore,
+              controller: _fields.bestBefore,
               now: widget.now ?? DateTime.now,
             ),
             const SizedBox(height: AppSpacing.md),
             SuggestField(
               key: const Key('notes-field'),
-              controller: _notes,
+              controller: _fields.notes,
               semanticLabel: 'Notes',
               icon: Icons.note,
             ),
