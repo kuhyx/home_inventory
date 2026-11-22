@@ -155,12 +155,15 @@ class _ItemList extends StatelessWidget {
           return Row(
             children: [
               Expanded(child: tile),
-              IconButton(
-                key: const Key('btn_bought_one'),
-                onPressed: () => _bought(context, item),
-                icon: const Icon(
-                  Icons.add_shopping_cart,
-                  semanticLabel: 'Bought one',
+              Tooltip(
+                message: 'Buy',
+                child: IconButton(
+                  key: const Key('btn_bought_one'),
+                  onPressed: () => _bought(context, item),
+                  icon: const Icon(
+                    Icons.add_shopping_cart,
+                    semanticLabel: 'Bought one',
+                  ),
                 ),
               ),
             ],

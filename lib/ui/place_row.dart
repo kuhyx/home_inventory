@@ -63,11 +63,14 @@ class PlaceRow extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.only(left: indent, right: AppSpacing.xs),
       leading: hasChildren
-          ? IconButton(
-              onPressed: onToggle,
-              icon: Icon(
-                expanded ? Icons.expand_more : Icons.chevron_right,
-                semanticLabel: expanded ? 'Collapse' : 'Expand',
+          ? Tooltip(
+              message: expanded ? 'Collapse' : 'Expand',
+              child: IconButton(
+                onPressed: onToggle,
+                icon: Icon(
+                  expanded ? Icons.expand_more : Icons.chevron_right,
+                  semanticLabel: expanded ? 'Collapse' : 'Expand',
+                ),
               ),
             )
           // Keeps childless rows aligned with their siblings' labels.
@@ -98,44 +101,50 @@ class PlaceRow extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            key: const Key('btn_show_everything'),
-            onPressed: onShow,
-            icon: const Icon(
-              Icons.arrow_forward,
-              semanticLabel: 'Show everything here',
+          Tooltip(
+            message: 'Show',
+            child: IconButton(
+              key: const Key('btn_show_everything'),
+              onPressed: onShow,
+              icon: const Icon(
+                Icons.arrow_forward,
+                semanticLabel: 'Show everything here',
+              ),
             ),
           ),
-          PopupMenuButton<String>(
-            key: const Key('menu_more'),
-            icon: const Icon(Icons.more_vert, semanticLabel: 'More'),
-            onSelected: (value) => switch (value) {
-              'add' => onAddChild(),
-              'rename' => onRename(),
-              'move' => onMove(),
-              _ => onDelete(),
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'add',
-                child: Icon(
-                  Icons.add_circle_outline,
-                  semanticLabel: 'Add a place inside',
+          Tooltip(
+            message: 'Menu',
+            child: PopupMenuButton<String>(
+              key: const Key('menu_more'),
+              icon: const Icon(Icons.more_vert, semanticLabel: 'More'),
+              onSelected: (value) => switch (value) {
+                'add' => onAddChild(),
+                'rename' => onRename(),
+                'move' => onMove(),
+                _ => onDelete(),
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'add',
+                  child: Icon(
+                    Icons.add_circle_outline,
+                    semanticLabel: 'Add a place inside',
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'rename',
-                child: Icon(Icons.edit, semanticLabel: 'Rename'),
-              ),
-              PopupMenuItem(
-                value: 'move',
-                child: Icon(Icons.change_circle, semanticLabel: 'Move'),
-              ),
-              PopupMenuItem(
-                value: 'delete',
-                child: Icon(Icons.delete, semanticLabel: 'Delete'),
-              ),
-            ],
+                PopupMenuItem(
+                  value: 'rename',
+                  child: Icon(Icons.edit, semanticLabel: 'Rename'),
+                ),
+                PopupMenuItem(
+                  value: 'move',
+                  child: Icon(Icons.change_circle, semanticLabel: 'Move'),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Icon(Icons.delete, semanticLabel: 'Delete'),
+                ),
+              ],
+            ),
           ),
         ],
       ),

@@ -128,7 +128,10 @@ class SettingsScreen extends StatelessWidget {
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.sync, semanticLabel: 'Sync settings'),
+            leading: const Tooltip(
+              message: 'Sync',
+              child: Icon(Icons.sync, semanticLabel: 'Sync settings'),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute(
@@ -153,9 +156,12 @@ class SettingsScreen extends StatelessWidget {
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(
-              Icons.cloud_sync,
-              semanticLabel: 'Advanced sync (GitHub)',
+            leading: const Tooltip(
+              message: 'GitHub',
+              child: Icon(
+                Icons.cloud_sync,
+                semanticLabel: 'Advanced sync (GitHub)',
+              ),
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push<void>(

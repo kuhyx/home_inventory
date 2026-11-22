@@ -39,14 +39,20 @@ class ItemFlagSwitches extends StatelessWidget {
         value: wanted,
         onChanged: onWantedChanged,
         secondary: const Icon(Icons.star_outline),
-        title: const Icon(Icons.star, semanticLabel: 'I want this'),
+        title: const Tooltip(
+          message: 'Want',
+          child: Icon(Icons.star, semanticLabel: 'I want this'),
+        ),
       ),
       SwitchListTile(
         key: const Key('item_flag_sellable'),
         value: sellable,
         onChanged: onSellableChanged,
         secondary: const Icon(Icons.sell_outlined),
-        title: const Icon(Icons.sell, semanticLabel: 'I could sell this'),
+        title: const Tooltip(
+          message: 'Sell',
+          child: Icon(Icons.sell, semanticLabel: 'I could sell this'),
+        ),
       ),
     ],
   );

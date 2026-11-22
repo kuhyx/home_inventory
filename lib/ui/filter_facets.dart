@@ -64,9 +64,12 @@ class PlaceFacet extends StatelessWidget {
                 ),
               ),
               if (selected)
-                IconButton(
-                  onPressed: onClear,
-                  icon: const Icon(Icons.close, semanticLabel: 'Anywhere'),
+                Tooltip(
+                  message: 'Clear',
+                  child: IconButton(
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close, semanticLabel: 'Anywhere'),
+                  ),
                 ),
             ],
           ),

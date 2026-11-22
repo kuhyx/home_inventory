@@ -63,43 +63,58 @@ class ItemsHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        IconButton(
-          key: const Key('items_header_filter'),
-          onPressed: onOpenFilter,
-          // The badge counts *facets*, not selections, so three rooms read as
-          // one restriction — which is how many taps it takes to undo them
-          // from the sheet.
-          icon: Badge(
-            isLabelVisible: activeFilterCount > 0,
-            label: Text('$activeFilterCount'),
-            child: const Icon(Icons.filter_list, semanticLabel: 'Filter'),
+        Tooltip(
+          message: 'Filter',
+          child: IconButton(
+            key: const Key('items_header_filter'),
+            onPressed: onOpenFilter,
+            // The badge counts *facets*, not selections, so three rooms read as
+            // one restriction — which is how many taps it takes to undo them
+            // from the sheet.
+            icon: Badge(
+              isLabelVisible: activeFilterCount > 0,
+              label: Text('$activeFilterCount'),
+              child: const Icon(Icons.filter_list, semanticLabel: 'Filter'),
+            ),
           ),
         ),
-        PopupMenuButton<ItemSort>(
-          key: const Key('items_header_sort'),
-          onSelected: onSortSelected,
-          icon: const Icon(Icons.sort, semanticLabel: 'Sort'),
-          itemBuilder: (_) => [
-            for (final value in ItemSort.values)
-              CheckedPopupMenuItem(
-                value: value,
-                checked: value == sort,
-                child: Icon(sortGlyph(value), semanticLabel: sortLabel(value)),
-              ),
-          ],
-        ),
-        IconButton(
-          key: const Key('items_header_scan'),
-          onPressed: onScan,
-          icon: const Icon(
-            Icons.qr_code_scanner,
-            semanticLabel: 'Scan to restock',
+        Tooltip(
+          message: 'Sort',
+          child: PopupMenuButton<ItemSort>(
+            key: const Key('items_header_sort'),
+            onSelected: onSortSelected,
+            icon: const Icon(Icons.sort, semanticLabel: 'Sort'),
+            itemBuilder: (_) => [
+              for (final value in ItemSort.values)
+                CheckedPopupMenuItem(
+                  value: value,
+                  checked: value == sort,
+                  child: Icon(
+                    sortGlyph(value),
+                    semanticLabel: sortLabel(value),
+                  ),
+                ),
+            ],
           ),
         ),
-        IconButton(
-          key: const Key('items_header_sync'),
-          onPressed: onOpenSettings,
-          icon: const Icon(Icons.sync, semanticLabel: 'Sync'),
+        Tooltip(
+          message: 'Scan',
+          child: IconButton(
+            key: const Key('items_header_scan'),
+            onPressed: onScan,
+            icon: const Icon(
+              Icons.qr_code_scanner,
+              semanticLabel: 'Scan to restock',
+            ),
+          ),
+        ),
+        Tooltip(
+          message: 'Sync',
+          child: IconButton(
+            key: const Key('items_header_sync'),
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.sync, semanticLabel: 'Sync'),
+          ),
         ),
       ],
     ),

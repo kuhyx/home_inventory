@@ -3,9 +3,9 @@ library;
 
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/adjustment.dart';
-import 'package:home_inventory/models/barcode_link.dart';
 import 'package:home_inventory/models/item.dart';
 import 'package:home_inventory/screens/item_form_screen.dart';
+import 'package:home_inventory/ui/adjustment_source_glyph.dart';
 import 'package:home_inventory/ui/code_prompt.dart';
 import 'package:home_inventory/ui/quantity_stepper.dart';
 import 'package:home_inventory/ui/stock_badge.dart';
@@ -153,22 +153,34 @@ class _DetailBody extends StatelessWidget {
           const Divider(),
           if (place.isNotEmpty)
             ListTile(
-              leading: const Icon(Icons.place_outlined),
+              leading: const Tooltip(
+                message: 'Location',
+                child: Icon(Icons.place_outlined),
+              ),
               title: Text(place),
             ),
           if (item.category.isNotEmpty)
             ListTile(
-              leading: const Icon(Icons.sell_outlined),
+              leading: const Tooltip(
+                message: 'Category',
+                child: Icon(Icons.sell_outlined),
+              ),
               title: Text(item.category),
             ),
           if (item.notes.isNotEmpty)
             ListTile(
-              leading: const Icon(Icons.notes_outlined),
+              leading: const Tooltip(
+                message: 'Notes',
+                child: Icon(Icons.notes_outlined),
+              ),
               title: Text(item.notes),
             ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.qr_code_2_outlined),
+            leading: const Tooltip(
+              message: 'Barcodes',
+              child: Icon(Icons.qr_code_2_outlined),
+            ),
             title: const Icon(Icons.qr_code, semanticLabel: 'Barcodes'),
             trailing: IconButton(
               key: const Key('add-barcode'),
@@ -185,8 +197,8 @@ class _DetailBody extends StatelessWidget {
               // differ only in bag size are otherwise indistinguishable.
               // "+N unit" after the code reads as "each scan adds N".
               subtitle: Text(
-                _perScan(link),
-                semanticsLabel: '${_perScan(link)} per scan',
+                adjustPerScan(link),
+                semanticsLabel: '${adjustPerScan(link)} per scan',
               ),
               trailing: IconButton(
                 key: const Key('unlink-barcode'),
@@ -198,53 +210,29 @@ class _DetailBody extends StatelessWidget {
             const Divider(),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              child: Icon(Icons.history, semanticLabel: 'History'),
+              child: Tooltip(
+                message: 'History',
+                child: Icon(Icons.history, semanticLabel: 'History'),
+              ),
             ),
             for (final entry in history)
               ListTile(
                 dense: true,
-                leading: Icon(_glyph(entry.source)),
-                title: Text(_signed(entry), semanticsLabel: _describe(entry)),
+                leading: Tooltip(
+                  message: adjustmentSourceTooltip(entry.source),
+                  child: Icon(adjustmentSourceGlyph(entry.source)),
+                ),
+                title: Text(
+                  adjustSigned(entry),
+                  semanticsLabel: adjustDescribe(entry),
+                ),
                 subtitle: Text(
-                  '${entry.at.year}-${_two(entry.at.month)}-'
-                  '${_two(entry.at.day)}',
+                  '${adjustTwo(entry.at.month)}-${adjustTwo(entry.at.day)}',
                 ),
               ),
           ],
         ],
       ),
     );
-  }
-
-  static String _two(int value) => value.toString().padLeft(2, '0');
-
-  /// Glyph per history source: minus for use, plus for restock, a pencil
-  /// for a recount, a flag for the starting amount.
-  static IconData _glyph(AdjustmentSource source) => switch (source) {
-    AdjustmentSource.use => Icons.remove_circle_outline,
-    AdjustmentSource.restock => Icons.add_circle_outline,
-    AdjustmentSource.correction => Icons.edit_outlined,
-    AdjustmentSource.initial => Icons.flag_outlined,
-  };
-
-  /// What one scan of [link] adds, e.g. "+500 g".
-  static String _perScan(BarcodeLink link) =>
-      '+${formatQuantity(link.amount)}'
-      '${link.unit.isEmpty ? '' : ' ${link.unit}'}';
-
-  /// The change as a signed number, the only painted part of a history row.
-  static String _signed(Adjustment entry) =>
-      '${entry.delta < 0 ? '−' : '+'}${formatQuantity(entry.delta.abs())}';
-
-  /// Spoken-only sentence for a history row.
-  static String _describe(Adjustment entry) {
-    final amount = formatQuantity(entry.delta.abs());
-    return switch (entry.source) {
-      AdjustmentSource.use => 'Used $amount',
-      AdjustmentSource.restock => 'Added $amount',
-      AdjustmentSource.correction =>
-        'Recounted to ${entry.delta > 0 ? '+' : '−'}$amount',
-      AdjustmentSource.initial => 'Added $amount to start',
-    };
   }
 }

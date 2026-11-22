@@ -163,7 +163,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
       floatingActionButton: FloatingActionButton(
         key: const Key('fab_add_place'),
         onPressed: _addPlace,
-        tooltip: '',
+        tooltip: 'Add',
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<List<LocationTreeNode>>(

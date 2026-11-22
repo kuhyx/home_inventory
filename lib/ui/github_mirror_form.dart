@@ -132,28 +132,37 @@ class GitHubMirrorForm extends StatelessWidget {
             _glyphRow(Icons.link, SelectableText(device.verificationUri)),
           ],
           const SizedBox(height: AppSpacing.md),
-          FilledButton(
-            key: const Key('connect_github'),
-            onPressed: busy ? null : onConnect,
-            child: const Icon(
-              Icons.cloud_upload_outlined,
-              semanticLabel: 'Connect GitHub',
+          Tooltip(
+            message: 'Connect',
+            child: FilledButton(
+              key: const Key('connect_github'),
+              onPressed: busy ? null : onConnect,
+              child: const Icon(
+                Icons.cloud_upload_outlined,
+                semanticLabel: 'Connect GitHub',
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          OutlinedButton(
-            key: const Key('test_github_connection'),
-            onPressed: busy ? null : onTest,
-            child: const Icon(
-              Icons.check_circle_outline,
-              semanticLabel: 'Test GitHub connection',
+          Tooltip(
+            message: 'Test',
+            child: OutlinedButton(
+              key: const Key('test_github_connection'),
+              onPressed: busy ? null : onTest,
+              child: const Icon(
+                Icons.check_circle_outline,
+                semanticLabel: 'Test GitHub connection',
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          OutlinedButton(
-            key: const Key('sync_now'),
-            onPressed: busy ? null : onSyncNow,
-            child: const Icon(Icons.sync_outlined, semanticLabel: 'Sync now'),
+          Tooltip(
+            message: 'Sync',
+            child: OutlinedButton(
+              key: const Key('sync_now'),
+              onPressed: busy ? null : onSyncNow,
+              child: const Icon(Icons.sync_outlined, semanticLabel: 'Sync now'),
+            ),
           ),
           Center(child: passphraseButton),
           const Divider(),
@@ -168,10 +177,16 @@ class GitHubMirrorForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          OutlinedButton(
-            key: const Key('save_token'),
-            onPressed: busy ? null : onSaveToken,
-            child: const Icon(Icons.save_outlined, semanticLabel: 'Save token'),
+          Tooltip(
+            message: 'Save',
+            child: OutlinedButton(
+              key: const Key('save_token'),
+              onPressed: busy ? null : onSaveToken,
+              child: const Icon(
+                Icons.save_outlined,
+                semanticLabel: 'Save token',
+              ),
+            ),
           ),
           if (status.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),

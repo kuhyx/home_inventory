@@ -169,21 +169,27 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      key: const Key('quick_add_save_continue'),
-                      onPressed: _saveAndContinue,
-                      child: const Icon(
-                        Icons.add_circle_outline,
-                        semanticLabel: 'Save & add another',
+                    child: Tooltip(
+                      message: 'Save+',
+                      child: OutlinedButton(
+                        key: const Key('quick_add_save_continue'),
+                        onPressed: _saveAndContinue,
+                        child: const Icon(
+                          Icons.add_circle_outline,
+                          semanticLabel: 'Save & add another',
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: FilledButton(
-                      key: const Key('quick_add_save'),
-                      onPressed: _saveAndClose,
-                      child: const Icon(Icons.save, semanticLabel: 'Save'),
+                    child: Tooltip(
+                      message: 'Save',
+                      child: FilledButton(
+                        key: const Key('quick_add_save'),
+                        onPressed: _saveAndClose,
+                        child: const Icon(Icons.save, semanticLabel: 'Save'),
+                      ),
                     ),
                   ),
                 ],

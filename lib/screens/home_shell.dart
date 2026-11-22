@@ -70,7 +70,7 @@ class _HomeShellState extends State<HomeShell> {
           icon: Icon(Icons.inventory_2_outlined, semanticLabel: 'Items'),
           selectedIcon: Icon(Icons.inventory_2, semanticLabel: 'Items'),
           label: '',
-          tooltip: '',
+          tooltip: 'Items',
         ),
         NavigationDestination(
           icon: Icon(
@@ -82,13 +82,13 @@ class _HomeShellState extends State<HomeShell> {
             semanticLabel: 'Locations',
           ),
           label: '',
-          tooltip: '',
+          tooltip: 'Locations',
         ),
         NavigationDestination(
           icon: Icon(Icons.shopping_cart_outlined, semanticLabel: 'Shopping'),
           selectedIcon: Icon(Icons.shopping_cart, semanticLabel: 'Shopping'),
           label: '',
-          tooltip: '',
+          tooltip: 'Shopping',
         ),
       ],
     ),

@@ -54,7 +54,10 @@ Future<String?> showPlaceNameDialog(
         TextButton(
           key: const Key('dialog_cancel'),
           onPressed: () => Navigator.of(context).pop(),
-          child: const Icon(Icons.close, semanticLabel: 'Cancel'),
+          child: const Tooltip(
+            message: 'Cancel',
+            child: Icon(Icons.close, semanticLabel: 'Cancel'),
+          ),
         ),
         FilledButton(
           key: const Key('dialog_save'),
@@ -63,7 +66,10 @@ Future<String?> showPlaceNameDialog(
               Navigator.of(context).pop(controller.text.trim());
             }
           },
-          child: const Icon(Icons.save, semanticLabel: 'Save'),
+          child: const Tooltip(
+            message: 'Save',
+            child: Icon(Icons.save, semanticLabel: 'Save'),
+          ),
         ),
       ],
     ),
