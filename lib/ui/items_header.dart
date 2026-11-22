@@ -78,24 +78,21 @@ class ItemsHeader extends StatelessWidget {
             ),
           ),
         ),
-        Tooltip(
-          message: 'Sort',
-          child: PopupMenuButton<ItemSort>(
-            key: const Key('items_header_sort'),
-            onSelected: onSortSelected,
-            icon: const Icon(Icons.sort, semanticLabel: 'Sort'),
-            itemBuilder: (_) => [
-              for (final value in ItemSort.values)
-                CheckedPopupMenuItem(
-                  value: value,
-                  checked: value == sort,
-                  child: Icon(
-                    sortGlyph(value),
-                    semanticLabel: sortLabel(value),
-                  ),
-                ),
-            ],
-          ),
+        PopupMenuButton<ItemSort>(
+          key: const Key('items_header_sort'),
+          // Its own tooltip, not a Tooltip wrapper: PopupMenuButton paints
+          // "Show menu" by default, which shadows any outer Tooltip.
+          tooltip: 'Sort',
+          onSelected: onSortSelected,
+          icon: const Icon(Icons.sort, semanticLabel: 'Sort'),
+          itemBuilder: (_) => [
+            for (final value in ItemSort.values)
+              CheckedPopupMenuItem(
+                value: value,
+                checked: value == sort,
+                child: Icon(sortGlyph(value), semanticLabel: sortLabel(value)),
+              ),
+          ],
         ),
         Tooltip(
           message: 'Scan',

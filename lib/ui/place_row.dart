@@ -112,39 +112,38 @@ class PlaceRow extends StatelessWidget {
               ),
             ),
           ),
-          Tooltip(
-            message: 'Menu',
-            child: PopupMenuButton<String>(
-              key: const Key('menu_more'),
-              icon: const Icon(Icons.more_vert, semanticLabel: 'More'),
-              onSelected: (value) => switch (value) {
-                'add' => onAddChild(),
-                'rename' => onRename(),
-                'move' => onMove(),
-                _ => onDelete(),
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'add',
-                  child: Icon(
-                    Icons.add_circle_outline,
-                    semanticLabel: 'Add a place inside',
-                  ),
+          PopupMenuButton<String>(
+            key: const Key('menu_more'),
+            // Own tooltip: a Tooltip wrapper is shadowed by "Show menu".
+            tooltip: 'Menu',
+            icon: const Icon(Icons.more_vert, semanticLabel: 'More'),
+            onSelected: (value) => switch (value) {
+              'add' => onAddChild(),
+              'rename' => onRename(),
+              'move' => onMove(),
+              _ => onDelete(),
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'add',
+                child: Icon(
+                  Icons.add_circle_outline,
+                  semanticLabel: 'Add a place inside',
                 ),
-                PopupMenuItem(
-                  value: 'rename',
-                  child: Icon(Icons.edit, semanticLabel: 'Rename'),
-                ),
-                PopupMenuItem(
-                  value: 'move',
-                  child: Icon(Icons.change_circle, semanticLabel: 'Move'),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Icon(Icons.delete, semanticLabel: 'Delete'),
-                ),
-              ],
-            ),
+              ),
+              PopupMenuItem(
+                value: 'rename',
+                child: Icon(Icons.edit, semanticLabel: 'Rename'),
+              ),
+              PopupMenuItem(
+                value: 'move',
+                child: Icon(Icons.change_circle, semanticLabel: 'Move'),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Icon(Icons.delete, semanticLabel: 'Delete'),
+              ),
+            ],
           ),
         ],
       ),

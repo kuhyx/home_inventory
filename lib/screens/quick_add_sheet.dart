@@ -170,7 +170,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 children: [
                   Expanded(
                     child: Tooltip(
-                      message: 'Save+',
+                      message: 'Save-another',
                       child: OutlinedButton(
                         key: const Key('quick_add_save_continue'),
                         onPressed: _saveAndContinue,
