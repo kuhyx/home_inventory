@@ -16,14 +16,29 @@ import '../support/builders.dart';
 import '../support/e2e.dart';
 import '../support/github_fake.dart';
 
-/// A [GitHubFake] behind a switch: while [down], every request fails the way
-/// a dropped network does.
+/// How the remote fails before it recovers.
+enum _Outage {
+  /// Every request fails the way a dropped network does.
+  offline,
+
+  /// Every GET answers 200 with the wrong JSON shape, so the client's cast
+  /// throws a TypeError: a Dart Error, not an Exception.
+  garbled,
+}
+
+/// A [GitHubFake] behind a switch: while [down], it fails as [outage] says.
 class _FlakyGitHub {
+  _FlakyGitHub(this.outage);
+
+  final _Outage outage;
   final GitHubFake github = GitHubFake();
   bool down = true;
 
   http.Client get client => http_testing.MockClient((request) async {
-    if (down) throw http.ClientException('network is down');
+    if (down && outage == _Outage.offline) {
+      throw http.ClientException('network is down');
+    }
+    if (down && request.method == 'GET') return http.Response('[]', 200);
     // MockClient hands over a finalized request; forward a fresh copy.
     final copy = http.Request(request.method, request.url)
       ..headers.addAll(request.headers)
@@ -61,14 +76,19 @@ void main() {
     await repo.close();
   });
 
-  test('a write made while offline is pushed by the next automatic retry '
-      'once the remote recovers', () async {
-    final remote = _FlakyGitHub();
+  /// A write made while the remote fails as [outage] is pushed by the next
+  /// automatic retry once it recovers, and a second device then sees it.
+  Future<void> writeDuringOutageIsPushed(_Outage outage) async {
+    final remote = _FlakyGitHub(outage);
     final state = InMemorySyncStateStore();
+    // Every tick that ran, and how each that returned ended (a tick that
+    // throws returns nothing, so it shows up in [attempts] only).
+    var attempts = 0;
     final results = <AutoSyncResult>[];
     final auto = AutoSync(
       repository: repo,
       run: () async {
+        attempts++;
         final result = await runBackgroundSync(
           repo,
           firebaseFactory: () async => null,
@@ -87,18 +107,17 @@ void main() {
     addTearDown(auto.dispose);
 
     auto.start();
-    await _until(() => results.isNotEmpty, 'the launch tick');
-    expect(results.single, AutoSyncResult.failed);
+    await _until(() => attempts > 0, 'the launch tick');
 
     // Written while the remote is down: kept locally, not pushed.
     await repo.upsert(itemFixture(id: 'cable', name: 'Cable', updatedAt: at));
-    final failedSoFar = results.length;
-    await _until(() => results.length > failedSoFar, 'a tick after the write');
-    expect(results, everyElement(AutoSyncResult.failed));
+    final failedSoFar = attempts;
+    await _until(() => attempts > failedSoFar, 'a tick after the write');
+    expect(results, isNot(contains(AutoSyncResult.synced)));
     expect(remote.github.puts, isEmpty);
     expect(repo.item('cable')?.name, 'Cable');
 
-    // The network comes back; nothing calls syncNow or taps a button.
+    // The remote comes back; nothing calls syncNow or taps a button.
     remote.down = false;
     await _until(
       () => results.contains(AutoSyncResult.synced),
@@ -119,5 +138,15 @@ void main() {
       now: at,
     );
     expect(other.listItems().map((i) => i.name), ['Cable']);
+  }
+
+  test(
+    'a write made while offline is pushed by the next automatic retry '
+    'once the remote recovers',
+    () => writeDuringOutageIsPushed(_Outage.offline),
+  );
+
+  test('a sync that throws a Dart Error (TypeError) is retried too', () async {
+    await writeDuringOutageIsPushed(_Outage.garbled);
   });
 }

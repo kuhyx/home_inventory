@@ -124,11 +124,20 @@ class AutoSync {
     unawaited(_changes?.cancel());
   }
 
+  /// Runs one tick; anything it throws is logged and counts as a failure,
+  /// so the backoff retry is armed. That includes a Dart Error: a garbled
+  /// response breaks a cast with a TypeError, and catching only Exception
+  /// left such a tick with no retry until the next write or resume.
   Future<AutoSyncResult> _runGuarded() async {
     try {
       return await run();
-    } on Exception catch (error) {
-      log('background sync failed: $error', name: 'home_inventory.sync');
+    } on Object catch (error, stack) {
+      log(
+        'background sync failed: $error',
+        name: 'home_inventory.sync',
+        error: error,
+        stackTrace: stack,
+      );
       return AutoSyncResult.failed;
     }
   }
