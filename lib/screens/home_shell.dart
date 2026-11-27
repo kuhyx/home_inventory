@@ -1,11 +1,14 @@
 /// The root surface: three destinations over one repository.
 library;
 
+import 'dart:async';
+
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/models/item_filter.dart';
 import 'package:home_inventory/screens/items_screen.dart';
 import 'package:home_inventory/screens/locations_screen.dart';
 import 'package:home_inventory/screens/shopping_screen.dart';
+import 'package:home_inventory/sync/auto_sync.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Root surface of the app.
@@ -19,13 +22,18 @@ import 'package:material_ui/material_ui.dart';
 /// one child cannot reach across to a sibling.
 class HomeShell extends StatefulWidget {
   /// Creates the shell.
-  const HomeShell({required this.repository, this.now, super.key});
+  const HomeShell({required this.repository, this.now, this.sync, super.key});
 
   /// Store shared by every destination.
   final ItemRepository repository;
 
   /// Injectable clock, passed to anything that writes.
   final DateTime Function()? now;
+
+  /// One background sync tick. When given, sync runs by itself on launch,
+  /// after a write, on resume, when the app is left, and on a timer; null
+  /// keeps it manual (widget tests that are not about sync).
+  final AutoSyncRunner? sync;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -34,6 +42,29 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   ItemFilter? _requestedFilter;
+  AutoSync? _autoSync;
+  AppLifecycleListener? _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    final run = widget.sync;
+    if (run == null) return;
+    final auto = AutoSync(repository: widget.repository, run: run)..start();
+    _autoSync = auto;
+    _lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(auto.syncNow()),
+      // Immediate, not debounced: Android may kill the process right after.
+      onHide: () => unawaited(auto.syncNow()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    _autoSync?.dispose();
+    super.dispose();
+  }
 
   /// Shows one place, and everything inside it, on the items tab.
   void _showLocation(String locationId) {

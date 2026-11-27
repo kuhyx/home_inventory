@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/main.dart';
 import 'package:home_inventory/screens/home_shell.dart';
+import 'package:home_inventory/sync/auto_sync.dart';
 import 'package:home_inventory/ui/theme.dart';
 
 void main() {
@@ -39,5 +40,34 @@ void main() {
     expect(app.darkTheme?.extension<AppStatusColors>(), isNotNull);
     expect(app.theme?.brightness, Brightness.light);
     expect(app.darkTheme?.brightness, Brightness.dark);
+  });
+
+  // Offline-first: sync starts by itself on launch and when the app comes
+  // back to the foreground, never only from the "Sync now" button.
+  testWidgets('syncs on launch and on resume without a tap', (tester) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      HomeInventoryApp(
+        repository: repo,
+        sync: () async {
+          calls++;
+          return AutoSyncResult.synced;
+        },
+      ),
+    );
+    await tester.pump();
+    expect(calls, 1);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    await tester.pump();
+    expect(calls, 2, reason: 'leaving the app pushes at once');
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(calls, 3, reason: 'coming back pulls');
+
+    // Unmount so the shell's timers are cancelled before the test ends.
+    await tester.pumpWidget(const SizedBox());
   });
 }

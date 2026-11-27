@@ -135,7 +135,12 @@ class SyncService {
         filename: kSyncFileName,
         commitMessage: 'home_inventory sync',
       );
-      await repository.replaceAll(merged);
+      // A merge into what the store holds *now*, not a replace: sync starts
+      // by itself, so the user can add an item while this tick is on the
+      // network, and `merged` was built from the snapshot taken before it.
+      // `merged` already contains that snapshot, so this keeps every pulled
+      // record and the in-flight write.
+      await repository.importLog(merged);
       return SyncOutcome(
         itemCount: repository.listItems().length,
         pushed: true,

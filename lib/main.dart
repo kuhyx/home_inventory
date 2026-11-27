@@ -4,6 +4,8 @@ library;
 import 'package:home_inventory/data/item_repository.dart';
 import 'package:home_inventory/data/repository_factory.dart';
 import 'package:home_inventory/screens/home_shell.dart';
+import 'package:home_inventory/sync/auto_sync.dart';
+import 'package:home_inventory/sync/background_sync.dart';
 import 'package:home_inventory/ui/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -16,17 +18,25 @@ import 'package:material_ui/material_ui.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final repository = await openRepository();
-  runApp(HomeInventoryApp(repository: repository));
+  runApp(
+    HomeInventoryApp(
+      repository: repository,
+      sync: () => runBackgroundSync(repository),
+    ),
+  );
 }
 // coverage:ignore-end
 
 /// The application root: theme wiring plus the home surface.
 class HomeInventoryApp extends StatelessWidget {
   /// Creates the app root.
-  const HomeInventoryApp({required this.repository, super.key});
+  const HomeInventoryApp({required this.repository, this.sync, super.key});
 
   /// The single store, passed down by constructor rather than an injector.
   final ItemRepository repository;
+
+  /// The background sync tick, handed to [HomeShell]; see [HomeShell.sync].
+  final AutoSyncRunner? sync;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +44,7 @@ class HomeInventoryApp extends StatelessWidget {
       title: 'Inventory',
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
-      home: HomeShell(repository: repository),
+      home: HomeShell(repository: repository, sync: sync),
     );
   }
 }
