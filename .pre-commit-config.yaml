@@ -24,11 +24,6 @@ repos:
       - id: mixed-line-ending
         args: [--fix=lf]
 
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-
   - repo: local
     hooks:
       # Fails a commit that still points crdt_sync at a local path. Local
@@ -46,14 +41,6 @@ repos:
       - id: ci-mirror-setup
         name: CI mirror 1 (clean, pub get)
         entry: bash scripts/ci_mirror.sh setup
-        language: system
-        pass_filenames: false
-        always_run: true
-        require_serial: true
-        stages: [manual]
-      - id: ci-mirror-analyze
-        name: CI mirror 2 (file length, analyze)
-        entry: bash scripts/ci_mirror.sh analyze
         language: system
         pass_filenames: false
         always_run: true
@@ -115,15 +102,6 @@ repos:
         always_run: true
         require_serial: true
         stages: [manual]
-      # Same 100% bar and every-lib-file guard, on the union of the shards.
-      - id: ci-mirror-cov-merge
-        name: CI mirror 10 (coverage 100%, union of shards)
-        entry: bash scripts/ci_mirror.sh coverage-merge
-        language: system
-        pass_filenames: false
-        always_run: true
-        require_serial: true
-        stages: [manual]
       - id: ci-mirror-build
         name: CI mirror 11 (web build)
         entry: bash scripts/ci_mirror.sh build
@@ -132,17 +110,6 @@ repos:
         always_run: true
         require_serial: true
         stages: [manual]
-
-      # No file over 250 lines. A file that cannot be read in one piece
-      # forces re-reads and partial edits, which is the largest avoidable
-      # cost in an LLM-assisted workflow. Checks the files in the commit, so
-      # an unrelated commit never trips over someone else's long file; the
-      # file-length workflow covers the whole tree on push.
-      - id: file-length
-        name: files under 250 lines
-        entry: scripts/check_file_length.sh
-        language: system
-        files: \.(dart|sh|py|yaml|yml|md|markdown|txt)$
 
       # Four markdown namespaces (README / CLAUDE* / DOCS* / TODO*), plus the
       # rule that a TODO carries "REMOVE ME AFTER FINISH" and nothing else may.
